@@ -1,19 +1,27 @@
 ---
+import ThemeInit from '../components/ThemeInit.astro'
+import ThemeToggle from '../components/ThemeToggle.astro'
+import '../styles/global.css'
+
 const readmeUrl = 'https://github.com/karanbalani/shiplog#readme'
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="refresh" content={`0; url=${readmeUrl}`} />
     <link rel="canonical" href={readmeUrl} />
     <title>Redirecting to shiplog README</title>
+    <ThemeInit />
   </head>
-  <body>
-    <p>
-      Redirecting to <a href={readmeUrl}>the shiplog README</a>.
-    </p>
+  <body class="redirect-page">
+    <main class="simple-page">
+      <p>
+        Redirecting to <a href={readmeUrl}>the shiplog README</a>.
+      </p>
+    </main>
+    <ThemeToggle />
   </body>
 </html>
