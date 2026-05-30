@@ -1,0 +1,26 @@
+<script is:inline>
+  ;(() => {
+    const modes = ['system', 'light', 'dark']
+    const storageKeys = ['shiplog-theme', 'shiplog-landing-theme']
+
+    const getStoredMode = () => {
+      for (const key of storageKeys) {
+        try {
+          const mode = localStorage.getItem(key)
+          if (modes.includes(mode)) return mode
+        } catch {
+          return 'system'
+        }
+      }
+
+      return 'system'
+    }
+
+    const mode = getStoredMode()
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+    document.documentElement.dataset.themeMode = mode
+    document.documentElement.dataset.theme =
+      mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode
+  })()
+</script>

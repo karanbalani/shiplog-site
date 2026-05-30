@@ -1,11 +1,14 @@
 ---
 import ConfigBuilder from '../components/ConfigBuilder'
+import FontPreload from '../components/FontPreload.astro'
+import ThemeInit from '../components/ThemeInit.astro'
+import ThemeToggle from '../components/ThemeToggle.astro'
 import '../styles/global.css'
 import '../styles/config-builder.css'
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -14,7 +17,9 @@ import '../styles/config-builder.css'
       content="Build and Base64-encode a shiplog config in your browser."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <FontPreload />
     <title>Config Builder - shiplog</title>
+    <ThemeInit />
   </head>
   <body class="builder-root">
     <header class="site-header">
@@ -31,5 +36,6 @@ import '../styles/config-builder.css'
     <main class="builder-page">
       <ConfigBuilder client:load />
     </main>
+    <ThemeToggle />
   </body>
 </html>

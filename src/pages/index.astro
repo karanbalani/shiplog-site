@@ -1,4 +1,7 @@
 ---
+import FontPreload from '../components/FontPreload.astro'
+import ThemeInit from '../components/ThemeInit.astro'
+import ThemeToggle from '../components/ThemeToggle.astro'
 import '../styles/global.css'
 ---
 
@@ -12,21 +15,9 @@ import '../styles/global.css'
       content="shiplog collects GitHub activity into your own Postgres and renders it back into a profile README."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <FontPreload />
     <title>shiplog - GitHub activity, owned by you</title>
-    <script is:inline>
-      (() => {
-        const storageKey = 'shiplog-landing-theme'
-        const modes = ['system', 'light', 'dark']
-        const savedMode = localStorage.getItem(storageKey)
-        const mode = modes.includes(savedMode) ? savedMode : 'system'
-        const theme = window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light'
-
-        document.documentElement.dataset.themeMode = mode
-        document.documentElement.dataset.theme = mode === 'system' ? theme : mode
-      })()
-    </script>
+    <ThemeInit />
   </head>
   <body class="landing-page">
     <header class="site-header">
@@ -62,72 +53,6 @@ import '../styles/global.css'
       </section>
     </main>
 
-    <button
-      class="theme-toggle"
-      type="button"
-      aria-label="Theme: system. Click for light theme."
-      data-theme-toggle
-    >
-      <span class="theme-toggle__mark" data-theme-mark aria-hidden="true">S</span>
-      <span class="theme-toggle__label" data-theme-label>System</span>
-    </button>
-
-    <script>
-      const storageKey = 'shiplog-landing-theme'
-      const modes = ['system', 'light', 'dark'] as const
-      const root = document.documentElement
-      const toggle = document.querySelector('[data-theme-toggle]')
-      const mark = document.querySelector('[data-theme-mark]')
-      const label = document.querySelector('[data-theme-label]')
-      const systemPreference = window.matchMedia('(prefers-color-scheme: dark)')
-
-      type ThemeMode = (typeof modes)[number]
-
-      const isThemeMode = (mode: string | undefined): mode is ThemeMode =>
-        modes.includes(mode as ThemeMode)
-
-      const resolveTheme = (mode: ThemeMode) =>
-        mode === 'system' ? (systemPreference.matches ? 'dark' : 'light') : mode
-
-      const getNextMode = (mode: ThemeMode) =>
-        modes[(modes.indexOf(mode) + 1) % modes.length]
-
-      const setThemeMode = (mode: ThemeMode) => {
-        const nextMode = getNextMode(mode)
-        const modeLabel = mode[0].toUpperCase() + mode.slice(1)
-
-        root.dataset.themeMode = mode
-        root.dataset.theme = resolveTheme(mode)
-        toggle?.setAttribute(
-          'aria-label',
-          `Theme: ${mode}. Click for ${nextMode} theme.`,
-        )
-
-        if (mark instanceof HTMLElement) {
-          mark.textContent = modeLabel[0]
-        }
-
-        if (label instanceof HTMLElement) {
-          label.textContent = modeLabel
-        }
-      }
-
-      setThemeMode(isThemeMode(root.dataset.themeMode) ? root.dataset.themeMode : 'system')
-
-      toggle?.addEventListener('click', () => {
-        const mode = isThemeMode(root.dataset.themeMode)
-          ? getNextMode(root.dataset.themeMode)
-          : 'system'
-
-        localStorage.setItem(storageKey, mode)
-        setThemeMode(mode)
-      })
-
-      systemPreference.addEventListener('change', () => {
-        if (root.dataset.themeMode === 'system') {
-          setThemeMode('system')
-        }
-      })
-    </script>
+    <ThemeToggle />
   </body>
 </html>

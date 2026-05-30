@@ -1,0 +1,15 @@
+<button
+  class="theme-toggle"
+  type="button"
+  aria-label="Theme: system. Click for light theme."
+  data-theme-toggle
+>
+  <span class="theme-toggle__mark" data-theme-mark aria-hidden="true">S</span>
+  <span class="theme-toggle__label" data-theme-label>System</span>
+</button>
+
+<script>
+  import { initSiteThemeToggle } from "../lib/site-theme";
+
+  initSiteThemeToggle();
+</script>
