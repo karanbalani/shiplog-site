@@ -18,7 +18,6 @@
   "dependencies": {
     "@astrojs/react": "^5.0.6",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "@fontsource-variable/newsreader": "^5.2.10",
     "ajv": "^8.20.0",
     "astro": "^6.4.2",
     "lucide-react": "^1.17.0",

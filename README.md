@@ -2,8 +2,6 @@
 
 Simple landing page and browser config builder for [shiplog](https://github.com/karanbalani/shiplog).
 
-The canonical documentation lives in the `shiplog` README. The local `/docs/` route is kept only as a redirect for old links.
-
 ## Development
 
 ```bash

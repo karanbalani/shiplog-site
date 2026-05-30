@@ -1,29 +1,4 @@
 @font-face {
-  font-family: "Newsreader Variable";
-  font-style: normal;
-  font-display: block;
-  font-weight: 200 800;
-  src: url("@fontsource-variable/newsreader/files/newsreader-latin-wght-normal.woff2")
-    format("woff2-variations");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-@font-face {
-  font-family: "Newsreader Variable";
-  font-style: normal;
-  font-display: block;
-  font-weight: 200 800;
-  src: url("@fontsource-variable/newsreader/files/newsreader-latin-ext-wght-normal.woff2")
-    format("woff2-variations");
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
-    U+A720-A7FF;
-}
-
-@font-face {
   font-family: "JetBrains Mono Variable";
   font-style: normal;
   font-display: block;
@@ -62,7 +37,7 @@
   --success: #267047;
   --success-line: #95c8a7;
   --success-bg: #f2fbf5;
-  font-family: "Newsreader Variable", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-family: "JetBrains Mono Variable", "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
 * {
@@ -175,8 +150,7 @@ textarea {
   text-decoration: underline;
 }
 
-.hero,
-.simple-page {
+.hero {
   max-width: 980px;
   margin-inline: auto;
   padding: clamp(44px, 8vw, 96px) clamp(18px, 5vw, 72px);
@@ -238,11 +212,6 @@ h1 {
   font-size: clamp(3.45rem, 11vw, 6.7rem);
   font-weight: 780;
   line-height: 0.92;
-}
-
-.simple-page h1 {
-  max-width: 12ch;
-  font-size: 3.75rem;
 }
 
 h2 {
@@ -380,33 +349,6 @@ h3 {
   transform: translateX(0);
 }
 
-.link-list {
-  display: grid;
-  max-width: 760px;
-  margin-top: 40px;
-  border-top: 1px solid var(--line);
-}
-
-.link-list a {
-  display: grid;
-  gap: 4px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: 1.15rem;
-  font-weight: 620;
-  text-decoration: none;
-}
-
-.link-list a:hover {
-  background: var(--softer);
-}
-
-.link-list span {
-  color: var(--muted);
-  font-size: 1rem;
-  font-weight: 400;
-}
-
 @media (max-width: 720px) {
   .hero {
     padding-block: 56px;
@@ -435,17 +377,12 @@ h3 {
     font-size: 0.7rem;
   }
 
-  .hero,
-  .simple-page {
+  .hero {
     padding-top: 56px;
   }
 
   h1 {
     font-size: 3.7rem;
-  }
-
-  .simple-page h1 {
-    font-size: 3rem;
   }
 
   .hero-text {
