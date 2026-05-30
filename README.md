@@ -19,6 +19,15 @@ The site uses Bun, Astro/Vite, oxfmt, and oxlint.
 bun run verify
 ```
 
+## Deployment
+
+Deployments are configured for Netlify in `netlify.toml`.
+
+- Build command: `bun run build`
+- Publish directory: `dist`
+- Production branch: `main`
+- Custom domain: `shiplog.karanbalani.tech`
+
 ## Sync shiplog assets
 
 The config builder uses generated schema assets from the canonical `shiplog` repo.

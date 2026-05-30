@@ -1,0 +1,17 @@
+[build]
+command = "bun run build"
+publish = "dist"
+
+[build.environment]
+BUN_VERSION = "1.3.13"
+NODE_VERSION = "22"
+SHIPLOG_REF = "main"
+
+[[headers]]
+for = "/*"
+
+[headers.values]
+Permissions-Policy = "camera=(), geolocation=(), microphone=()"
+Referrer-Policy = "strict-origin-when-cross-origin"
+X-Content-Type-Options = "nosniff"
+X-Frame-Options = "DENY"
