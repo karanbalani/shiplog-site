@@ -295,11 +295,11 @@ h3 {
   left: 18px;
   display: inline-flex;
   width: 44px;
+  height: 44px;
   max-width: calc(100vw - 36px);
-  min-height: 44px;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 0;
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -314,6 +314,7 @@ h3 {
   cursor: pointer;
   transition:
     width 160ms ease,
+    gap 160ms ease,
     background 140ms ease,
     color 140ms ease;
 }
@@ -322,6 +323,7 @@ h3 {
 .theme-toggle:focus-visible {
   width: 122px;
   justify-content: flex-start;
+  gap: 10px;
   padding: 0 13px;
   background: var(--ink);
   color: var(--paper);
@@ -335,16 +337,20 @@ h3 {
 }
 
 .theme-toggle__label {
+  max-width: 0;
   opacity: 0;
+  overflow: hidden;
   white-space: nowrap;
   transform: translateX(-4px);
   transition:
+    max-width 160ms ease,
     opacity 140ms ease,
     transform 140ms ease;
 }
 
 .theme-toggle:hover .theme-toggle__label,
 .theme-toggle:focus-visible .theme-toggle__label {
+  max-width: 72px;
   opacity: 1;
   transform: translateX(0);
 }
