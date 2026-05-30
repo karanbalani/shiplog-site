@@ -25,6 +25,14 @@ export const readStoredThemeMode = (getItem: StorageReader): ThemeMode => {
 
 const getThemeModeLabel = (mode: ThemeMode) => mode[0].toUpperCase() + mode.slice(1);
 
+export const getThemeModeParts = (mode: ThemeMode) => {
+  const label = getThemeModeLabel(mode);
+  return {
+    mark: label[0],
+    suffix: label.slice(1),
+  };
+};
+
 const safeStorageRead = (key: string) => {
   try {
     return window.localStorage.getItem(key);
@@ -50,18 +58,18 @@ export const initSiteThemeToggle = () => {
 
   const setThemeMode = (mode: ThemeMode) => {
     const nextMode = getNextThemeMode(mode);
-    const modeLabel = getThemeModeLabel(mode);
+    const modeParts = getThemeModeParts(mode);
 
     root.dataset.themeMode = mode;
     root.dataset.theme = resolveTheme(mode, systemPreference.matches);
     toggle?.setAttribute("aria-label", `Theme: ${mode}. Click for ${nextMode} theme.`);
 
     if (mark instanceof HTMLElement) {
-      mark.textContent = modeLabel[0];
+      mark.textContent = modeParts.mark;
     }
 
     if (label instanceof HTMLElement) {
-      label.textContent = modeLabel;
+      label.textContent = modeParts.suffix;
     }
   };
 

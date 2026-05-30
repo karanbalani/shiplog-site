@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  getThemeModeParts,
   getNextThemeMode,
   readStoredThemeMode,
   resolveTheme,
@@ -11,6 +12,12 @@ describe("site theme", () => {
     expect(getNextThemeMode("system")).toBe("light");
     expect(getNextThemeMode("light")).toBe("dark");
     expect(getNextThemeMode("dark")).toBe("system");
+  });
+
+  test("splits theme labels into a collapsed mark and hover suffix", () => {
+    expect(getThemeModeParts("system")).toEqual({ mark: "S", suffix: "ystem" });
+    expect(getThemeModeParts("light")).toEqual({ mark: "L", suffix: "ight" });
+    expect(getThemeModeParts("dark")).toEqual({ mark: "D", suffix: "ark" });
   });
 
   test("resolves system mode from the user's color preference", () => {
