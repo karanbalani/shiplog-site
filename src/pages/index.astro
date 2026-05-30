@@ -1,4 +1,5 @@
 ---
+import FontPreload from '../components/FontPreload.astro'
 import ThemeInit from '../components/ThemeInit.astro'
 import ThemeToggle from '../components/ThemeToggle.astro'
 import '../styles/global.css'
@@ -14,6 +15,7 @@ import '../styles/global.css'
       content="shiplog collects GitHub activity into your own Postgres and renders it back into a profile README."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <FontPreload />
     <title>shiplog - GitHub activity, owned by you</title>
     <ThemeInit />
   </head>

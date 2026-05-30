@@ -1,5 +1,6 @@
 ---
 import ConfigBuilder from '../components/ConfigBuilder'
+import FontPreload from '../components/FontPreload.astro'
 import ThemeInit from '../components/ThemeInit.astro'
 import ThemeToggle from '../components/ThemeToggle.astro'
 import '../styles/global.css'
@@ -16,6 +17,7 @@ import '../styles/config-builder.css'
       content="Build and Base64-encode a shiplog config in your browser."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <FontPreload />
     <title>Config Builder - shiplog</title>
     <ThemeInit />
   </head>
