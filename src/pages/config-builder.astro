@@ -1,0 +1,35 @@
+---
+import ConfigBuilder from '../components/ConfigBuilder'
+import '../styles/global.css'
+import '../styles/config-builder.css'
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta
+      name="description"
+      content="Build and Base64-encode a shiplog config in your browser."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Config Builder - shiplog</title>
+  </head>
+  <body class="builder-root">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="shiplog home">
+        <span class="brand-mark" aria-hidden="true">sl</span>
+        <span>shiplog</span>
+      </a>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a aria-current="page" href="/config-builder/">Config Builder</a>
+        <a href="https://github.com/karanbalani/shiplog">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="builder-page">
+      <ConfigBuilder client:load />
+    </main>
+  </body>
+</html>
