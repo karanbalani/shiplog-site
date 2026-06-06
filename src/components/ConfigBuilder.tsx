@@ -10,7 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import schema from "../generated/shiplog/shiplog.config.schema.json";
 import { configBuilderNoAutofillProps } from "../lib/config-builder-autofill";
 import {
@@ -178,6 +178,17 @@ function publishTargetSummary(target: PublishTarget): string | undefined {
   if (target.publishRepository.resolvedName) return target.publishRepository.resolvedName;
   if (target.publishRepository.value.trim()) return target.publishRepository.value.trim();
   return undefined;
+}
+
+function resolveOnEnter(
+  event: KeyboardEvent<HTMLInputElement>,
+  resolve: () => void,
+  disabled: boolean,
+) {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+  if (!disabled) resolve();
 }
 
 type ConfigBuilderDeviceGateProps = {
@@ -812,7 +823,7 @@ export default function ConfigBuilder() {
   }
 
   function renderResolveNote(item: ResolveItem, onManualResolve?: () => void) {
-    const showStatus = item.status === "resolving" || item.status === "resolved";
+    const showStatus = item.status === "resolving";
     const showManualResolve =
       item.status === "error" && item.commands && item.commands.length > 0 && onManualResolve;
 
@@ -858,65 +869,83 @@ export default function ConfigBuilder() {
           <span className="resolver-count">({items.length})</span>
         </summary>
         <div className="resolver-items">
-          {items.length === 0 && <p className="empty-note">No entries.</p>}
-          {items.map((item, index) => (
-            <div
-              className={`resolver-item ${listErrors[item.id] ? "is-invalid" : ""}`}
-              key={item.id}
-            >
+          {items.map((item, index) => {
+            const resolveDisabled =
+              !item.value.trim() || item.status === "resolving" || item.status === "resolved";
+
+            return (
               <div
-                className={`resolve-control ${item.status === "resolved" ? "is-resolved" : ""} ${
-                  listErrors[item.id] ? "is-invalid" : ""
-                }`}
+                className={`resolver-item ${listErrors[item.id] ? "is-invalid" : ""}`}
+                key={item.id}
               >
-                <input
-                  {...configBuilderNoAutofillProps}
-                  aria-label={`${label} ${index + 1}`}
-                  aria-describedby={`${key}-${item.id}-error`}
-                  aria-invalid={Boolean(listErrors[item.id])}
-                  id={`${key}-${item.id}`}
-                  placeholder={placeholder}
-                  readOnly={item.status === "resolved"}
-                  value={item.value}
-                  onChange={(event) =>
-                    updateSourceListItem(source.id, key, item.id, event.target.value)
-                  }
-                />
-                {item.status !== "resolved" && (
-                  <button
-                    className="tool-button"
-                    disabled={!item.value.trim() || item.status === "resolving"}
-                    type="button"
-                    onClick={() => resolveSourceListItem(source.id, key, item.id, itemLabel, kind)}
-                  >
-                    <Search aria-hidden="true" size={18} />
-                    Resolve
-                  </button>
-                )}
-                <button
-                  className="icon-button"
-                  type="button"
-                  aria-label={`Remove ${label} ${index + 1}`}
-                  onClick={() => removeSourceListItem(source.id, key, item.id)}
+                <div
+                  className={`resolve-control ${item.status === "resolved" ? "is-resolved" : ""} ${
+                    listErrors[item.id] ? "is-invalid" : ""
+                  }`}
                 >
-                  <Trash2 aria-hidden="true" size={18} />
-                </button>
+                  <input
+                    {...configBuilderNoAutofillProps}
+                    aria-label={`${label} ${index + 1}`}
+                    aria-describedby={`${key}-${item.id}-error`}
+                    aria-invalid={Boolean(listErrors[item.id])}
+                    id={`${key}-${item.id}`}
+                    placeholder={placeholder}
+                    readOnly={item.status === "resolved"}
+                    value={item.value}
+                    onChange={(event) =>
+                      updateSourceListItem(source.id, key, item.id, event.target.value)
+                    }
+                    onKeyDown={(event) =>
+                      resolveOnEnter(
+                        event,
+                        () => resolveSourceListItem(source.id, key, item.id, itemLabel, kind),
+                        resolveDisabled,
+                      )
+                    }
+                  />
+                  {item.status === "resolved" && (
+                    <span className="resolved-indicator" aria-label="Resolved">
+                      <CheckCircle2 aria-hidden="true" size={18} />
+                    </span>
+                  )}
+                  {item.status !== "resolved" && (
+                    <button
+                      aria-label={`Resolve ${label} ${index + 1}`}
+                      className="icon-button"
+                      disabled={resolveDisabled}
+                      type="button"
+                      onClick={() =>
+                        resolveSourceListItem(source.id, key, item.id, itemLabel, kind)
+                      }
+                    >
+                      <Search aria-hidden="true" size={18} />
+                    </button>
+                  )}
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label={`Remove ${label} ${index + 1}`}
+                    onClick={() => removeSourceListItem(source.id, key, item.id)}
+                  >
+                    <Trash2 aria-hidden="true" size={18} />
+                  </button>
+                </div>
+                {renderFieldError(`${key}-${item.id}-error`, listErrors[item.id])}
+                {item.value.trim() &&
+                  renderResolveNote(item, () =>
+                    openManualResolve({
+                      scope: "sourceList",
+                      sourceId: source.id,
+                      key,
+                      itemId: item.id,
+                      label: itemLabel,
+                      value: item.value,
+                      commands: item.commands ?? fallbackCommands(kind, item.value),
+                    }),
+                  )}
               </div>
-              {renderFieldError(`${key}-${item.id}-error`, listErrors[item.id])}
-              {item.value.trim() &&
-                renderResolveNote(item, () =>
-                  openManualResolve({
-                    scope: "sourceList",
-                    sourceId: source.id,
-                    key,
-                    itemId: item.id,
-                    label: itemLabel,
-                    value: item.value,
-                    commands: item.commands ?? fallbackCommands(kind, item.value),
-                  }),
-                )}
-            </div>
-          ))}
+            );
+          })}
           <button
             className="tool-button"
             type="button"
@@ -1035,7 +1064,7 @@ export default function ConfigBuilder() {
             )}
 
             {activeTab === "collection" && (
-              <section className="builder-form-section">
+              <section className="builder-form-section list-section">
                 <div className="section-heading section-heading-row">
                   <h3>Collection Sources</h3>
                   <button
@@ -1057,6 +1086,10 @@ export default function ConfigBuilder() {
                     const sourceSummaryText = sourceSummary(source);
                     const sourceValidation = formValidation.sources[source.id];
                     const isActiveSource = activeSourceId === source.id;
+                    const sourceAccountResolveDisabled =
+                      !source.account.value.trim() ||
+                      source.account.status === "resolving" ||
+                      source.account.status === "resolved";
                     const needsAttention = Boolean(
                       sourceValidation &&
                       (sourceValidation.account ||
@@ -1078,10 +1111,15 @@ export default function ConfigBuilder() {
                             onClick={() => setActiveSourceId(source.id)}
                           >
                             <span>
-                              <h4>GitHub</h4>
-                              {sourceSummaryText && (
-                                <span className="card-summary">{sourceSummaryText}</span>
-                              )}
+                              <h4>
+                                GitHub
+                                {sourceSummaryText && (
+                                  <>
+                                    {" "}
+                                    <span className="provider-account">({sourceSummaryText})</span>
+                                  </>
+                                )}
+                              </h4>
                             </span>
                             <span
                               className={`card-state ${needsAttention ? "is-invalid" : "is-valid"}`}
@@ -1112,7 +1150,7 @@ export default function ConfigBuilder() {
                               }`}
                             >
                               <label className="field-label" htmlFor={sourceAccountId}>
-                                GitHub username
+                                Username
                               </label>
                               <div
                                 className={`resolve-control ${
@@ -1131,28 +1169,40 @@ export default function ConfigBuilder() {
                                   onChange={(event) =>
                                     updateSourceAccount(source.id, event.target.value)
                                   }
+                                  onKeyDown={(event) =>
+                                    resolveOnEnter(
+                                      event,
+                                      () => resolveSourceAccount(source.id),
+                                      sourceAccountResolveDisabled,
+                                    )
+                                  }
                                 />
                                 {source.account.status === "resolved" ? (
-                                  <button
-                                    className="icon-button"
-                                    type="button"
-                                    aria-label={`Clear source ${index + 1} GitHub username`}
-                                    onClick={() => updateSourceAccount(source.id, "")}
-                                  >
-                                    <Trash2 aria-hidden="true" size={18} />
-                                  </button>
+                                  <>
+                                    <span
+                                      className="resolved-indicator"
+                                      aria-label={`Source ${index + 1} GitHub username resolved`}
+                                    >
+                                      <CheckCircle2 aria-hidden="true" size={18} />
+                                    </span>
+                                    <button
+                                      className="icon-button"
+                                      type="button"
+                                      aria-label={`Clear source ${index + 1} GitHub username`}
+                                      onClick={() => updateSourceAccount(source.id, "")}
+                                    >
+                                      <Trash2 aria-hidden="true" size={18} />
+                                    </button>
+                                  </>
                                 ) : (
                                   <button
-                                    className="tool-button"
-                                    disabled={
-                                      !source.account.value.trim() ||
-                                      source.account.status === "resolving"
-                                    }
+                                    aria-label={`Resolve source ${index + 1} GitHub username`}
+                                    className="icon-button"
+                                    disabled={sourceAccountResolveDisabled}
                                     type="button"
                                     onClick={() => resolveSourceAccount(source.id)}
                                   >
                                     <Search aria-hidden="true" size={18} />
-                                    Resolve
                                   </button>
                                 )}
                               </div>
@@ -1160,7 +1210,8 @@ export default function ConfigBuilder() {
                                 `${sourceAccountId}-error`,
                                 sourceValidation?.account,
                               )}
-                              {source.account.value.trim() &&
+                              {source.account.status !== "resolved" &&
+                                source.account.value.trim() &&
                                 renderResolveNote(source.account, () =>
                                   openManualResolve({
                                     scope: "sourceAccount",
@@ -1178,12 +1229,12 @@ export default function ConfigBuilder() {
                               <strong>Generated source env names</strong>
                               <div>
                                 <code>{READ_TOKEN_ENV}</code>
-                                <span>read token for terminal and workflows</span>
+                                <span>terminal + workflows</span>
                               </div>
                               {sourceTokenEnvs.map((tokenEnv) => (
                                 <div key={tokenEnv}>
                                   <code>{tokenEnv}</code>
-                                  <span>restricted organization read token</span>
+                                  <span>restricted org read</span>
                                 </div>
                               ))}
                             </div>
@@ -1227,7 +1278,7 @@ export default function ConfigBuilder() {
             )}
 
             {activeTab === "publish" && (
-              <section className="builder-form-section">
+              <section className="builder-form-section list-section">
                 <div className="section-heading section-heading-row">
                   <h3>Publish Targets</h3>
                   <button
@@ -1248,6 +1299,10 @@ export default function ConfigBuilder() {
                     const targetSummaryText = publishTargetSummary(target);
                     const targetValidation = formValidation.publishTargets[target.id];
                     const isActiveTarget = activePublishTargetId === target.id;
+                    const publishRepositoryResolveDisabled =
+                      !target.publishRepository.value.trim() ||
+                      target.publishRepository.status === "resolving" ||
+                      target.publishRepository.status === "resolved";
                     const needsAttention = Boolean(
                       targetValidation &&
                       (targetValidation.publishRepository ||
@@ -1268,10 +1323,15 @@ export default function ConfigBuilder() {
                             onClick={() => setActivePublishTargetId(target.id)}
                           >
                             <span>
-                              <h4>GitHub</h4>
-                              {targetSummaryText && (
-                                <span className="card-summary">{targetSummaryText}</span>
-                              )}
+                              <h4>
+                                GitHub
+                                {targetSummaryText && (
+                                  <>
+                                    {" "}
+                                    <span className="provider-account">({targetSummaryText})</span>
+                                  </>
+                                )}
+                              </h4>
                             </span>
                             <span
                               className={`card-state ${needsAttention ? "is-invalid" : "is-valid"}`}
@@ -1302,7 +1362,7 @@ export default function ConfigBuilder() {
                               }`}
                             >
                               <label className="field-label" htmlFor={targetRepositoryId}>
-                                Publish repository
+                                Repository
                               </label>
                               <div
                                 className={`resolve-control ${
@@ -1323,28 +1383,40 @@ export default function ConfigBuilder() {
                                   onChange={(event) =>
                                     updatePublishTargetRepository(target.id, event.target.value)
                                   }
+                                  onKeyDown={(event) =>
+                                    resolveOnEnter(
+                                      event,
+                                      () => resolvePublishTargetRepository(target.id),
+                                      publishRepositoryResolveDisabled,
+                                    )
+                                  }
                                 />
                                 {target.publishRepository.status === "resolved" ? (
-                                  <button
-                                    className="icon-button"
-                                    type="button"
-                                    aria-label={`Clear publish target ${index + 1} repository`}
-                                    onClick={() => updatePublishTargetRepository(target.id, "")}
-                                  >
-                                    <Trash2 aria-hidden="true" size={18} />
-                                  </button>
+                                  <>
+                                    <span
+                                      className="resolved-indicator"
+                                      aria-label={`Publish target ${index + 1} repository resolved`}
+                                    >
+                                      <CheckCircle2 aria-hidden="true" size={18} />
+                                    </span>
+                                    <button
+                                      className="icon-button"
+                                      type="button"
+                                      aria-label={`Clear publish target ${index + 1} repository`}
+                                      onClick={() => updatePublishTargetRepository(target.id, "")}
+                                    >
+                                      <Trash2 aria-hidden="true" size={18} />
+                                    </button>
+                                  </>
                                 ) : (
                                   <button
-                                    className="tool-button"
-                                    disabled={
-                                      !target.publishRepository.value.trim() ||
-                                      target.publishRepository.status === "resolving"
-                                    }
+                                    aria-label={`Resolve publish target ${index + 1} repository`}
+                                    className="icon-button"
+                                    disabled={publishRepositoryResolveDisabled}
                                     type="button"
                                     onClick={() => resolvePublishTargetRepository(target.id)}
                                   >
                                     <Search aria-hidden="true" size={18} />
-                                    Resolve
                                   </button>
                                 )}
                               </div>
@@ -1352,7 +1424,8 @@ export default function ConfigBuilder() {
                                 `${targetRepositoryId}-error`,
                                 targetValidation?.publishRepository,
                               )}
-                              {target.publishRepository.value.trim() &&
+                              {target.publishRepository.status !== "resolved" &&
+                                target.publishRepository.value.trim() &&
                                 renderResolveNote(target.publishRepository, () =>
                                   openManualResolve({
                                     scope: "destinationRepository",
@@ -1415,7 +1488,7 @@ export default function ConfigBuilder() {
                               <strong>Generated publish target env names</strong>
                               <div>
                                 <code>{WRITE_TOKEN_ENV}</code>
-                                <span>write token for README publishing</span>
+                                <span>README publish</span>
                               </div>
                             </div>
                           </div>
@@ -1433,7 +1506,6 @@ export default function ConfigBuilder() {
           <div className="panel-heading output-heading">
             <div>
               <h2>Output</h2>
-              <p>Copy JSON locally, or Base64 for workflows.</p>
             </div>
             <div className={ready ? "status is-valid" : "status is-invalid"}>
               {ready ? (

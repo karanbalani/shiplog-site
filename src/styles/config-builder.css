@@ -165,14 +165,23 @@
 
 .form-sections {
   flex: 1 1 auto;
-  overflow: auto;
-  padding-right: 4px;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+  padding-right: 0;
 }
 
 .builder-form-section {
   display: grid;
+  align-content: start;
   gap: 12px;
   padding-top: 18px;
+}
+
+.list-section {
+  align-content: normal;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .builder-form-section:first-child {
@@ -185,12 +194,19 @@
   gap: 18px;
 }
 
-.section-heading,
-.source-header {
+.section-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.source-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
 }
 
 .section-heading h3,
@@ -201,7 +217,16 @@
 }
 
 .source-header h4 {
+  margin: 0;
   text-transform: uppercase;
+}
+
+.provider-account {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 0.86em;
+  font-weight: 650;
+  text-transform: none;
 }
 
 .section-heading-row {
@@ -210,25 +235,37 @@
 
 .source-card {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   padding: 14px;
   border: 0;
   border-radius: 8px;
-  background: var(--surface);
-  box-shadow: none;
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .source-card:not(.is-active) {
   gap: 0;
 }
 
+.source-stack {
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.source-stack::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .card-toggle {
   display: flex;
   width: 100%;
   min-width: 0;
-  align-items: flex-start;
+  min-height: 32px;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -259,13 +296,27 @@
 
 .card-state {
   flex: 0 0 auto;
-  padding: 5px 7px;
+  padding: 4px 6px;
   border: 0;
   border-radius: 999px;
   color: var(--ink);
   font-size: 0.68rem;
   font-weight: 760;
+  line-height: 1;
   text-transform: uppercase;
+}
+
+.source-header .icon-button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.source-header .icon-button:hover {
+  background: var(--soft);
+  color: var(--ink);
 }
 
 .card-state.is-valid {
@@ -343,12 +394,32 @@
 
 .resolve-control.is-resolved,
 .resolver-item .resolve-control.is-resolved {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.resolve-control:has(.resolved-indicator) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .resolve-control input[readonly] {
   background: var(--soft);
   cursor: default;
+}
+
+.resolved-indicator {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.resolve-control .icon-button {
+  width: 44px;
+  height: 44px;
 }
 
 .resolve-note {
@@ -415,8 +486,8 @@
 
 .env-panel div {
   display: grid;
-  grid-template-columns: minmax(160px, 0.45fr) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 14px;
   align-items: baseline;
 }
 
@@ -427,9 +498,12 @@
 }
 
 .env-panel span {
+  justify-self: end;
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.35;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .resolver-stack {
@@ -474,10 +548,6 @@
   color: var(--muted);
 }
 
-.resolver-group[open] .resolver-count {
-  display: none;
-}
-
 .resolver-items {
   display: grid;
   gap: 12px;
@@ -487,12 +557,6 @@
 .resolver-item {
   display: grid;
   gap: 6px;
-}
-
-.empty-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.82rem;
 }
 
 .field textarea {

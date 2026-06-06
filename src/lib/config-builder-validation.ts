@@ -82,26 +82,73 @@ function publishTargetHasErrors(target: BuilderValidation["publishTargets"][stri
   return Boolean(target.publishRepository || target.branch || target.path);
 }
 
-function validateSource(source: CollectSource): BuilderValidation["sources"][string] {
+function duplicateSourceAccountIds(sources: CollectSource[]): Set<string> {
+  const counts = new Map<string, number>();
+
+  for (const source of sources) {
+    const accountId = source.account.nodeId.trim();
+    if (!accountId) continue;
+    counts.set(accountId, (counts.get(accountId) ?? 0) + 1);
+  }
+
+  return new Set(
+    [...counts.entries()].filter(([, count]) => count > 1).map(([accountId]) => accountId),
+  );
+}
+
+function duplicatePublishRepositoryIds(targets: PublishTarget[]): Set<string> {
+  const counts = new Map<string, number>();
+
+  for (const target of targets) {
+    const repositoryId = target.publishRepository.nodeId.trim();
+    if (!repositoryId) continue;
+    counts.set(repositoryId, (counts.get(repositoryId) ?? 0) + 1);
+  }
+
+  return new Set(
+    [...counts.entries()].filter(([, count]) => count > 1).map(([repositoryId]) => repositoryId),
+  );
+}
+
+function validateSource(
+  source: CollectSource,
+  duplicateAccountIds: Set<string>,
+): BuilderValidation["sources"][string] {
+  const accountResolverError = requiredResolverError(
+    source.account,
+    "Enter and resolve a GitHub username.",
+    "Resolve this GitHub username.",
+  );
+  const duplicateAccountError =
+    source.account.nodeId && duplicateAccountIds.has(source.account.nodeId.trim())
+      ? "This GitHub account is already added."
+      : undefined;
+
   return {
-    account: requiredResolverError(
-      source.account,
-      "Enter and resolve a GitHub username.",
-      "Resolve this GitHub username.",
-    ),
+    account: accountResolverError ?? duplicateAccountError,
     restrictedOrganizations: collectListErrors(source, "restrictedOrganizations"),
     ignoredOrganizations: collectListErrors(source, "ignoredOrganizations"),
     ignoredRepositories: collectListErrors(source, "ignoredRepositories"),
   };
 }
 
-function validatePublishTarget(target: PublishTarget): BuilderValidation["publishTargets"][string] {
+function validatePublishTarget(
+  target: PublishTarget,
+  duplicateRepositoryIds: Set<string>,
+): BuilderValidation["publishTargets"][string] {
+  const publishRepositoryError = requiredResolverError(
+    target.publishRepository,
+    "Enter and resolve a publish repository.",
+    "Resolve this publish repository.",
+  );
+  const duplicateRepositoryError =
+    target.publishRepository.nodeId &&
+    duplicateRepositoryIds.has(target.publishRepository.nodeId.trim())
+      ? "This publish repository is already added."
+      : undefined;
+
   return {
-    publishRepository: requiredResolverError(
-      target.publishRepository,
-      "Enter and resolve a publish repository.",
-      "Resolve this publish repository.",
-    ),
+    publishRepository: publishRepositoryError ?? duplicateRepositoryError,
     branch: target.branch.trim() ? undefined : "Enter a publish branch.",
     path: target.path.trim() ? undefined : "Enter a publish path.",
   };
@@ -116,11 +163,16 @@ export function validateBuilderForm(form: BuilderForm): BuilderValidation {
         : "Use 0 to 90 days.",
   };
 
+  const duplicateAccountIds = duplicateSourceAccountIds(form.sources);
   const sources = Object.fromEntries(
-    form.sources.map((source) => [source.id, validateSource(source)]),
+    form.sources.map((source) => [source.id, validateSource(source, duplicateAccountIds)]),
   );
+  const duplicateRepositoryIds = duplicatePublishRepositoryIds(form.publishTargets);
   const publishTargets = Object.fromEntries(
-    form.publishTargets.map((target) => [target.id, validatePublishTarget(target)]),
+    form.publishTargets.map((target) => [
+      target.id,
+      validatePublishTarget(target, duplicateRepositoryIds),
+    ]),
   );
 
   const tabs = {

@@ -35,6 +35,9 @@
   --surface-raised: #ffffff;
   --shadow-soft: 0 18px 60px rgb(0 0 0 / 0.07);
   --shadow-tight: 0 8px 26px rgb(0 0 0 / 0.08);
+  --scrollbar-thumb: #c9c9c9;
+  --scrollbar-thumb-hover: #9e9e9e;
+  --scrollbar-track: transparent;
   --error: #9b2f2f;
   --error-line: #d59a9a;
   --error-bg: #fff4f2;
@@ -46,6 +49,33 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html {
@@ -67,6 +97,8 @@ html {
   --surface-raised: #151515;
   --shadow-soft: 0 20px 70px rgb(0 0 0 / 0.42);
   --shadow-tight: 0 10px 34px rgb(0 0 0 / 0.34);
+  --scrollbar-thumb: #424242;
+  --scrollbar-thumb-hover: #686868;
   --error: #ffb3a9;
   --error-line: #9d554d;
   --error-bg: #2a1210;
@@ -185,10 +217,11 @@ textarea {
 
 .landing-page .hero-copy {
   max-width: 780px;
+  padding-block: clamp(18px, 3vh, 32px);
 }
 
 .eyebrow {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
@@ -233,7 +266,7 @@ h3 {
 
 .hero-text {
   max-width: 720px;
-  margin: 22px auto 0;
+  margin: 28px auto 0;
   color: var(--muted);
   font-size: 1.35rem;
   line-height: 1.34;
@@ -255,7 +288,7 @@ h3 {
 
 .hero-actions {
   justify-content: center;
-  margin-top: 30px;
+  margin-top: 40px;
 }
 
 .button,
