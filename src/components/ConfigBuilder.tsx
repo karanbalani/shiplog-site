@@ -180,6 +180,52 @@ function publishTargetSummary(target: PublishTarget): string | undefined {
   return undefined;
 }
 
+type ConfigBuilderDeviceGateProps = {
+  className?: string;
+  reason?: ConfigBuilderDeviceBlockReason;
+};
+
+function ConfigBuilderDeviceGate({ className = "", reason }: ConfigBuilderDeviceGateProps) {
+  const shellClassName = ["builder-shell", "builder-shell-blocked", className]
+    .filter(Boolean)
+    .join(" ");
+  const gateMode = reason ?? "responsive";
+
+  return (
+    <section className={shellClassName}>
+      <div className={`builder-panel builder-device-gate is-${gateMode}`}>
+        <p className="manual-modal__eyebrow">
+          <span className="narrow-message">Window too narrow</span>
+          <span className="device-message">Desktop required</span>
+        </p>
+        <h2>
+          <span className="narrow-message">Widen this browser window</span>
+          <span className="device-message">Use a laptop for the config builder</span>
+        </h2>
+        <p>
+          <span className="narrow-message">
+            This looks like a desktop browser, but the current window is too narrow for the config
+            builder layout. Make the window wider to continue.
+          </span>
+          <span className="device-message">
+            This tool needs enough room for collection sources, publish targets, JSON output, and
+            terminal fallback commands. Open it from a desktop browser with GitHub CLI available for
+            private repository lookups.
+          </span>
+        </p>
+        <div className="action-row">
+          <a className="button button-primary" href="https://github.com/karanbalani/shiplog">
+            Open GitHub
+          </a>
+          <a className="button button-secondary" href="/">
+            Back home
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function ConfigBuilder() {
   const [form, setForm] = useState<BuilderForm>(() => createInitialBuilderForm());
   const config = useMemo(() => buildConfig(form), [form]);
@@ -885,38 +931,13 @@ export default function ConfigBuilder() {
   }
 
   if (builderBlockReason) {
-    const isNarrowWindow = builderBlockReason === "narrow";
-
-    return (
-      <section className="builder-shell builder-shell-blocked">
-        <div className="builder-panel builder-device-gate">
-          <p className="manual-modal__eyebrow">
-            {isNarrowWindow ? "Window too narrow" : "Desktop required"}
-          </p>
-          <h2>
-            {isNarrowWindow ? "Widen this browser window" : "Use a laptop for the config builder"}
-          </h2>
-          <p>
-            {isNarrowWindow
-              ? "This looks like a desktop browser, but the current window is too narrow for the config builder layout. Make the window wider to continue."
-              : "This tool needs enough room for collection sources, publish targets, JSON output, and terminal fallback commands. Open it from a desktop browser with GitHub CLI available for private repository lookups."}
-          </p>
-          <div className="action-row">
-            <a className="button button-primary" href="https://github.com/karanbalani/shiplog">
-              Open GitHub
-            </a>
-            <a className="button button-secondary" href="/">
-              Back home
-            </a>
-          </div>
-        </div>
-      </section>
-    );
+    return <ConfigBuilderDeviceGate reason={builderBlockReason} />;
   }
 
   return (
     <section className="builder-shell">
-      <div className="builder-layout">
+      <ConfigBuilderDeviceGate className="builder-device-fallback" />
+      <div className="builder-layout builder-shell-interactive">
         <div className="builder-panel input-panel">
           <div className="panel-heading input-heading">
             <div>
