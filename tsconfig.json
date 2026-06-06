@@ -6,5 +6,5 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true
   },
-  "exclude": [".astro", "dist", "src/**/*.test.ts"]
+  "exclude": [".astro", "dist", "src/**/*.test.ts", "src/**/*.test.tsx"]
 }

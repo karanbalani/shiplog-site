@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { DeviceGate } from "./DeviceGate";
 import schema from "../generated/shiplog/shiplog.config.schema.json";
 import { configBuilderNoAutofillProps } from "../lib/config-builder-autofill";
 import {
@@ -86,6 +87,15 @@ const builderTabs: Array<{ id: BuilderTab; label: string }> = [
   { id: "collection", label: "Collection Sources" },
   { id: "publish", label: "Publish Targets" },
 ];
+
+const configBuilderDeviceGateCopy = {
+  narrowTitle: "Widen this browser window",
+  deviceTitle: "Use a laptop for the Config Builder",
+  narrowBody:
+    "This looks like a desktop browser, but the current window is too narrow for the Config Builder layout. Make the window wider to continue.",
+  deviceBody:
+    "This tool needs enough room for collection sources, publish targets, JSON output, and terminal fallback commands. Open it from a desktop browser with GitHub CLI available for private repository lookups.",
+};
 
 const fieldIds = {
   displayName: "display-name",
@@ -191,52 +201,6 @@ function resolveOnEnter(
   if (!disabled) resolve();
 }
 
-type ConfigBuilderDeviceGateProps = {
-  className?: string;
-  reason?: ConfigBuilderDeviceBlockReason;
-};
-
-function ConfigBuilderDeviceGate({ className = "", reason }: ConfigBuilderDeviceGateProps) {
-  const shellClassName = ["builder-shell", "builder-shell-blocked", className]
-    .filter(Boolean)
-    .join(" ");
-  const gateMode = reason ?? "responsive";
-
-  return (
-    <section className={shellClassName}>
-      <div className={`builder-panel builder-device-gate is-${gateMode}`}>
-        <p className="manual-modal__eyebrow">
-          <span className="narrow-message">Window too narrow</span>
-          <span className="device-message">Desktop required</span>
-        </p>
-        <h2>
-          <span className="narrow-message">Widen this browser window</span>
-          <span className="device-message">Use a laptop for the config builder</span>
-        </h2>
-        <p>
-          <span className="narrow-message">
-            This looks like a desktop browser, but the current window is too narrow for the config
-            builder layout. Make the window wider to continue.
-          </span>
-          <span className="device-message">
-            This tool needs enough room for collection sources, publish targets, JSON output, and
-            terminal fallback commands. Open it from a desktop browser with GitHub CLI available for
-            private repository lookups.
-          </span>
-        </p>
-        <div className="action-row">
-          <a className="button button-primary" href="https://github.com/karanbalani/shiplog">
-            Open GitHub
-          </a>
-          <a className="button button-secondary" href="/">
-            Back home
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function ConfigBuilder() {
   const [form, setForm] = useState<BuilderForm>(() => createInitialBuilderForm());
   const config = useMemo(() => buildConfig(form), [form]);
@@ -247,11 +211,7 @@ export default function ConfigBuilder() {
   const [activeSourceId, setActiveSourceId] = useState("source-github-1");
   const [activePublishTargetId, setActivePublishTargetId] = useState("publish-target-github-1");
   const [builderBlockReason, setBuilderBlockReason] =
-    useState<ConfigBuilderDeviceBlockReason | null>(() =>
-      typeof window === "undefined"
-        ? null
-        : getConfigBuilderDeviceBlockReason(readConfigBuilderDevice()),
-    );
+    useState<ConfigBuilderDeviceBlockReason | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [manualResolve, setManualResolve] = useState<ManualResolveTarget | null>(null);
   const [manualNodeId, setManualNodeId] = useState("");
@@ -959,722 +919,765 @@ export default function ConfigBuilder() {
     );
   }
 
-  if (builderBlockReason) {
-    return <ConfigBuilderDeviceGate reason={builderBlockReason} />;
-  }
+  const builderDeviceGateClassName = [
+    "builder-device-fallback",
+    builderBlockReason ? "is-runtime-active" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <section className="builder-shell">
-      <ConfigBuilderDeviceGate className="builder-device-fallback" />
-      <div className="builder-layout builder-shell-interactive">
-        <div className="builder-panel input-panel">
-          <div className="panel-heading input-heading">
-            <div>
-              <h2>Inputs</h2>
-              <p>GitHub names and URLs become stable node IDs in the generated config.</p>
-            </div>
-            <button className="tool-button" type="button" onClick={reset}>
-              <RefreshCw aria-hidden="true" size={18} />
-              Reset
-            </button>
-          </div>
-
-          <div className="builder-tabs" role="tablist" aria-label="Config sections">
-            {builderTabs.map((tab) => {
-              const tabStatus = formValidation.tabs[tab.id];
-
-              return (
-                <button
-                  aria-selected={activeTab === tab.id}
-                  className="builder-tab"
-                  key={tab.id}
-                  role="tab"
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <span className={`tab-status is-${tabStatus}`}>
-                    {tabStatus === "valid" ? (
-                      <CheckCircle2 aria-hidden="true" size={17} />
-                    ) : (
-                      <CircleAlert aria-hidden="true" size={17} />
-                    )}
-                  </span>
-                  <span>{tab.label}</span>
+      <DeviceGate
+        className={builderDeviceGateClassName}
+        copy={configBuilderDeviceGateCopy}
+        reason={builderBlockReason ?? undefined}
+      />
+      {!builderBlockReason && (
+        <>
+          <div className="builder-layout builder-shell-interactive">
+            <div className="builder-panel input-panel">
+              <div className="panel-heading input-heading">
+                <div>
+                  <h2>Inputs</h2>
+                  <p>GitHub names and URLs become stable node IDs in the generated config.</p>
+                </div>
+                <button className="tool-button" type="button" onClick={reset}>
+                  <RefreshCw aria-hidden="true" size={18} />
+                  Reset
                 </button>
-              );
-            })}
-          </div>
+              </div>
 
-          <p className="builder-terminal-note">
-            Private repositories require GitHub CLI for manual ID lookup.
-          </p>
+              <div className="builder-tabs" role="tablist" aria-label="Config sections">
+                {builderTabs.map((tab) => {
+                  const tabStatus = formValidation.tabs[tab.id];
 
-          <div className="form-sections" role="tabpanel">
-            {activeTab === "profile" && (
-              <section className="builder-form-section profile-section">
-                <div className="section-heading">
-                  <h3>Profile</h3>
-                </div>
-                <div className="field-grid">
-                  <label
-                    className={`field ${formValidation.profile.displayName ? "is-invalid" : ""}`}
-                    htmlFor={fieldIds.displayName}
-                  >
-                    <span>Display name</span>
-                    <input
-                      {...configBuilderNoAutofillProps}
-                      aria-label="Display name"
-                      aria-describedby={`${fieldIds.displayName}-error`}
-                      aria-invalid={Boolean(formValidation.profile.displayName)}
-                      id={fieldIds.displayName}
-                      placeholder="Your display name"
-                      value={form.displayName}
-                      onChange={(event) => updateField("displayName", event.target.value)}
-                    />
-                    {renderFieldError(
-                      `${fieldIds.displayName}-error`,
-                      formValidation.profile.displayName,
-                    )}
-                  </label>
+                  return (
+                    <button
+                      aria-selected={activeTab === tab.id}
+                      className="builder-tab"
+                      key={tab.id}
+                      role="tab"
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      <span className={`tab-status is-${tabStatus}`}>
+                        {tabStatus === "valid" ? (
+                          <CheckCircle2 aria-hidden="true" size={17} />
+                        ) : (
+                          <CircleAlert aria-hidden="true" size={17} />
+                        )}
+                      </span>
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-                  <label
-                    className={`field ${formValidation.profile.lookbackDays ? "is-invalid" : ""}`}
-                    htmlFor={fieldIds.lookbackDays}
-                  >
-                    <span>Lookback days</span>
-                    <input
-                      {...configBuilderNoAutofillProps}
-                      aria-label="Lookback days"
-                      aria-describedby={`${fieldIds.lookbackDays}-error`}
-                      aria-invalid={Boolean(formValidation.profile.lookbackDays)}
-                      id={fieldIds.lookbackDays}
-                      min={0}
-                      max={90}
-                      type="number"
-                      value={form.lookbackDays}
-                      onChange={(event) => updateField("lookbackDays", Number(event.target.value))}
-                    />
-                    {renderFieldError(
-                      `${fieldIds.lookbackDays}-error`,
-                      formValidation.profile.lookbackDays,
-                    )}
-                  </label>
-                </div>
-              </section>
-            )}
+              <p className="builder-terminal-note">
+                Private repositories require GitHub CLI for manual ID lookup.
+              </p>
 
-            {activeTab === "collection" && (
-              <section className="builder-form-section list-section">
-                <div className="section-heading section-heading-row">
-                  <h3>Collection Sources</h3>
-                  <button
-                    className="tool-button"
-                    type="button"
-                    onClick={() => setShowSourcePicker(true)}
-                  >
-                    <Plus aria-hidden="true" size={18} />
-                    Add source
-                  </button>
-                </div>
-
-                <div className="source-stack">
-                  {form.sources.map((source, index) => {
-                    const sourceTokenEnvs = source.restrictedOrganizations
-                      .filter((item) => item.status === "resolved")
-                      .map((item) => tokenEnvForOrganization(item.resolvedName));
-                    const sourceAccountId = `${source.id}-github-username`;
-                    const sourceSummaryText = sourceSummary(source);
-                    const sourceValidation = formValidation.sources[source.id];
-                    const isActiveSource = activeSourceId === source.id;
-                    const sourceAccountResolveDisabled =
-                      !source.account.value.trim() ||
-                      source.account.status === "resolving" ||
-                      source.account.status === "resolved";
-                    const needsAttention = Boolean(
-                      sourceValidation &&
-                      (sourceValidation.account ||
-                        Object.keys(sourceValidation.restrictedOrganizations).length > 0 ||
-                        Object.keys(sourceValidation.ignoredOrganizations).length > 0 ||
-                        Object.keys(sourceValidation.ignoredRepositories).length > 0),
-                    );
-
-                    return (
-                      <article
-                        className={`source-card ${isActiveSource ? "is-active" : ""}`}
-                        key={source.id}
+              <div className="form-sections" role="tabpanel">
+                {activeTab === "profile" && (
+                  <section className="builder-form-section profile-section">
+                    <div className="section-heading">
+                      <h3>Profile</h3>
+                    </div>
+                    <div className="field-grid">
+                      <label
+                        className={`field ${formValidation.profile.displayName ? "is-invalid" : ""}`}
+                        htmlFor={fieldIds.displayName}
                       >
-                        <div className="source-header">
-                          <button
-                            aria-expanded={isActiveSource}
-                            className="card-toggle"
-                            type="button"
-                            onClick={() => setActiveSourceId(source.id)}
-                          >
-                            <span>
-                              <h4>
-                                GitHub
-                                {sourceSummaryText && (
-                                  <>
-                                    {" "}
-                                    <span className="provider-account">({sourceSummaryText})</span>
-                                  </>
-                                )}
-                              </h4>
-                            </span>
-                            <span
-                              className={`card-state ${needsAttention ? "is-invalid" : "is-valid"}`}
-                            >
-                              {needsAttention
-                                ? "Action required"
-                                : isActiveSource
-                                  ? "Editing"
-                                  : "Edit"}
-                            </span>
-                          </button>
-                          <button
-                            aria-label={`Remove source ${index + 1}`}
-                            className="icon-button"
-                            disabled={form.sources.length === 1}
-                            type="button"
-                            onClick={() => removeSource(source.id)}
-                          >
-                            <Trash2 aria-hidden="true" size={18} />
-                          </button>
-                        </div>
+                        <span>Display name</span>
+                        <input
+                          {...configBuilderNoAutofillProps}
+                          aria-label="Display name"
+                          aria-describedby={`${fieldIds.displayName}-error`}
+                          aria-invalid={Boolean(formValidation.profile.displayName)}
+                          id={fieldIds.displayName}
+                          placeholder="Your display name"
+                          value={form.displayName}
+                          onChange={(event) => updateField("displayName", event.target.value)}
+                        />
+                        {renderFieldError(
+                          `${fieldIds.displayName}-error`,
+                          formValidation.profile.displayName,
+                        )}
+                      </label>
 
-                        {isActiveSource && (
-                          <div className="field-grid card-body">
-                            <div
-                              className={`field field-wide ${
-                                sourceValidation?.account ? "is-invalid" : ""
-                              }`}
-                            >
-                              <label className="field-label" htmlFor={sourceAccountId}>
-                                Username
-                              </label>
-                              <div
-                                className={`resolve-control ${
-                                  source.account.status === "resolved" ? "is-resolved" : ""
-                                } ${sourceValidation?.account ? "is-invalid" : ""}`}
+                      <label
+                        className={`field ${formValidation.profile.lookbackDays ? "is-invalid" : ""}`}
+                        htmlFor={fieldIds.lookbackDays}
+                      >
+                        <span>Lookback days</span>
+                        <input
+                          {...configBuilderNoAutofillProps}
+                          aria-label="Lookback days"
+                          aria-describedby={`${fieldIds.lookbackDays}-error`}
+                          aria-invalid={Boolean(formValidation.profile.lookbackDays)}
+                          id={fieldIds.lookbackDays}
+                          min={0}
+                          max={90}
+                          type="number"
+                          value={form.lookbackDays}
+                          onChange={(event) =>
+                            updateField("lookbackDays", Number(event.target.value))
+                          }
+                        />
+                        {renderFieldError(
+                          `${fieldIds.lookbackDays}-error`,
+                          formValidation.profile.lookbackDays,
+                        )}
+                      </label>
+                    </div>
+                  </section>
+                )}
+
+                {activeTab === "collection" && (
+                  <section className="builder-form-section list-section">
+                    <div className="section-heading section-heading-row">
+                      <h3>Collection Sources</h3>
+                      <button
+                        className="tool-button"
+                        type="button"
+                        onClick={() => setShowSourcePicker(true)}
+                      >
+                        <Plus aria-hidden="true" size={18} />
+                        Add source
+                      </button>
+                    </div>
+
+                    <div className="source-stack">
+                      {form.sources.map((source, index) => {
+                        const sourceTokenEnvs = source.restrictedOrganizations
+                          .filter((item) => item.status === "resolved")
+                          .map((item) => tokenEnvForOrganization(item.resolvedName));
+                        const sourceAccountId = `${source.id}-github-username`;
+                        const sourceSummaryText = sourceSummary(source);
+                        const sourceValidation = formValidation.sources[source.id];
+                        const isActiveSource = activeSourceId === source.id;
+                        const sourceAccountResolveDisabled =
+                          !source.account.value.trim() ||
+                          source.account.status === "resolving" ||
+                          source.account.status === "resolved";
+                        const needsAttention = Boolean(
+                          sourceValidation &&
+                          (sourceValidation.account ||
+                            Object.keys(sourceValidation.restrictedOrganizations).length > 0 ||
+                            Object.keys(sourceValidation.ignoredOrganizations).length > 0 ||
+                            Object.keys(sourceValidation.ignoredRepositories).length > 0),
+                        );
+
+                        return (
+                          <article
+                            className={`source-card ${isActiveSource ? "is-active" : ""}`}
+                            key={source.id}
+                          >
+                            <div className="source-header">
+                              <button
+                                aria-expanded={isActiveSource}
+                                className="card-toggle"
+                                type="button"
+                                onClick={() => setActiveSourceId(source.id)}
                               >
-                                <input
-                                  {...configBuilderNoAutofillProps}
-                                  aria-label={`Source ${index + 1} GitHub username`}
-                                  aria-describedby={`${sourceAccountId}-error`}
-                                  aria-invalid={Boolean(sourceValidation?.account)}
-                                  id={sourceAccountId}
-                                  placeholder="octocat or github.com/octocat"
-                                  readOnly={source.account.status === "resolved"}
-                                  value={source.account.value}
-                                  onChange={(event) =>
-                                    updateSourceAccount(source.id, event.target.value)
-                                  }
-                                  onKeyDown={(event) =>
-                                    resolveOnEnter(
-                                      event,
-                                      () => resolveSourceAccount(source.id),
-                                      sourceAccountResolveDisabled,
-                                    )
-                                  }
-                                />
-                                {source.account.status === "resolved" ? (
-                                  <>
-                                    <span
-                                      className="resolved-indicator"
-                                      aria-label={`Source ${index + 1} GitHub username resolved`}
-                                    >
-                                      <CheckCircle2 aria-hidden="true" size={18} />
-                                    </span>
-                                    <button
-                                      className="icon-button"
-                                      type="button"
-                                      aria-label={`Clear source ${index + 1} GitHub username`}
-                                      onClick={() => updateSourceAccount(source.id, "")}
-                                    >
-                                      <Trash2 aria-hidden="true" size={18} />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button
-                                    aria-label={`Resolve source ${index + 1} GitHub username`}
-                                    className="icon-button"
-                                    disabled={sourceAccountResolveDisabled}
-                                    type="button"
-                                    onClick={() => resolveSourceAccount(source.id)}
-                                  >
-                                    <Search aria-hidden="true" size={18} />
-                                  </button>
-                                )}
-                              </div>
-                              {renderFieldError(
-                                `${sourceAccountId}-error`,
-                                sourceValidation?.account,
-                              )}
-                              {source.account.status !== "resolved" &&
-                                source.account.value.trim() &&
-                                renderResolveNote(source.account, () =>
-                                  openManualResolve({
-                                    scope: "sourceAccount",
-                                    sourceId: source.id,
-                                    label: "GitHub username",
-                                    value: source.account.value,
-                                    commands:
-                                      source.account.commands ??
-                                      fallbackCommands("user", source.account.value),
-                                  }),
-                                )}
+                                <span>
+                                  <h4>
+                                    GitHub
+                                    {sourceSummaryText && (
+                                      <>
+                                        {" "}
+                                        <span className="provider-account">
+                                          ({sourceSummaryText})
+                                        </span>
+                                      </>
+                                    )}
+                                  </h4>
+                                </span>
+                                <span
+                                  className={`card-state ${needsAttention ? "is-invalid" : "is-valid"}`}
+                                >
+                                  {needsAttention
+                                    ? "Action required"
+                                    : isActiveSource
+                                      ? "Editing"
+                                      : "Edit"}
+                                </span>
+                              </button>
+                              <button
+                                aria-label={`Remove source ${index + 1}`}
+                                className="icon-button"
+                                disabled={form.sources.length === 1}
+                                type="button"
+                                onClick={() => removeSource(source.id)}
+                              >
+                                <Trash2 aria-hidden="true" size={18} />
+                              </button>
                             </div>
 
-                            <div className="env-panel field-wide">
-                              <strong>Generated source env names</strong>
-                              <div>
-                                <code>{READ_TOKEN_ENV}</code>
-                                <span>terminal + workflows</span>
-                              </div>
-                              {sourceTokenEnvs.map((tokenEnv) => (
-                                <div key={tokenEnv}>
-                                  <code>{tokenEnv}</code>
-                                  <span>restricted org read</span>
+                            {isActiveSource && (
+                              <div className="field-grid card-body">
+                                <div
+                                  className={`field field-wide ${
+                                    sourceValidation?.account ? "is-invalid" : ""
+                                  }`}
+                                >
+                                  <label className="field-label" htmlFor={sourceAccountId}>
+                                    Username
+                                  </label>
+                                  <div
+                                    className={`resolve-control ${
+                                      source.account.status === "resolved" ? "is-resolved" : ""
+                                    } ${sourceValidation?.account ? "is-invalid" : ""}`}
+                                  >
+                                    <input
+                                      {...configBuilderNoAutofillProps}
+                                      aria-label={`Source ${index + 1} GitHub username`}
+                                      aria-describedby={`${sourceAccountId}-error`}
+                                      aria-invalid={Boolean(sourceValidation?.account)}
+                                      id={sourceAccountId}
+                                      placeholder="octocat or github.com/octocat"
+                                      readOnly={source.account.status === "resolved"}
+                                      value={source.account.value}
+                                      onChange={(event) =>
+                                        updateSourceAccount(source.id, event.target.value)
+                                      }
+                                      onKeyDown={(event) =>
+                                        resolveOnEnter(
+                                          event,
+                                          () => resolveSourceAccount(source.id),
+                                          sourceAccountResolveDisabled,
+                                        )
+                                      }
+                                    />
+                                    {source.account.status === "resolved" ? (
+                                      <>
+                                        <span
+                                          className="resolved-indicator"
+                                          aria-label={`Source ${index + 1} GitHub username resolved`}
+                                        >
+                                          <CheckCircle2 aria-hidden="true" size={18} />
+                                        </span>
+                                        <button
+                                          className="icon-button"
+                                          type="button"
+                                          aria-label={`Clear source ${index + 1} GitHub username`}
+                                          onClick={() => updateSourceAccount(source.id, "")}
+                                        >
+                                          <Trash2 aria-hidden="true" size={18} />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        aria-label={`Resolve source ${index + 1} GitHub username`}
+                                        className="icon-button"
+                                        disabled={sourceAccountResolveDisabled}
+                                        type="button"
+                                        onClick={() => resolveSourceAccount(source.id)}
+                                      >
+                                        <Search aria-hidden="true" size={18} />
+                                      </button>
+                                    )}
+                                  </div>
+                                  {renderFieldError(
+                                    `${sourceAccountId}-error`,
+                                    sourceValidation?.account,
+                                  )}
+                                  {source.account.status !== "resolved" &&
+                                    source.account.value.trim() &&
+                                    renderResolveNote(source.account, () =>
+                                      openManualResolve({
+                                        scope: "sourceAccount",
+                                        sourceId: source.id,
+                                        label: "GitHub username",
+                                        value: source.account.value,
+                                        commands:
+                                          source.account.commands ??
+                                          fallbackCommands("user", source.account.value),
+                                      }),
+                                    )}
                                 </div>
-                              ))}
-                            </div>
 
-                            <div className="field-wide resolver-stack">
-                              {renderList(
-                                source,
-                                "restrictedOrganizations",
-                                "Restricted organizations",
-                                "Restricted organization",
-                                "Add restricted org",
-                                "org-login or github.com/org-login",
-                                "organization",
-                              )}
-                              {renderList(
-                                source,
-                                "ignoredOrganizations",
-                                "Ignored organizations",
-                                "Ignored organization",
-                                "Add ignored org",
-                                "org-login or github.com/org-login",
-                                "organization",
-                              )}
-                              {renderList(
-                                source,
-                                "ignoredRepositories",
-                                "Ignored repositories",
-                                "Ignored repository",
-                                "Add ignored repo",
-                                "owner/repo or github.com/owner/repo",
-                                "repository",
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+                                <div className="env-panel field-wide">
+                                  <strong>Generated source env names</strong>
+                                  <div>
+                                    <code>{READ_TOKEN_ENV}</code>
+                                    <span>terminal + workflows</span>
+                                  </div>
+                                  {sourceTokenEnvs.map((tokenEnv) => (
+                                    <div key={tokenEnv}>
+                                      <code>{tokenEnv}</code>
+                                      <span>restricted org read</span>
+                                    </div>
+                                  ))}
+                                </div>
 
-            {activeTab === "publish" && (
-              <section className="builder-form-section list-section">
-                <div className="section-heading section-heading-row">
-                  <h3>Publish Targets</h3>
-                  <button
-                    className="tool-button"
-                    type="button"
-                    onClick={() => setShowPublishTargetPicker(true)}
-                  >
-                    <Plus aria-hidden="true" size={18} />
-                    Add target
-                  </button>
-                </div>
+                                <div className="field-wide resolver-stack">
+                                  {renderList(
+                                    source,
+                                    "restrictedOrganizations",
+                                    "Restricted organizations",
+                                    "Restricted organization",
+                                    "Add restricted org",
+                                    "org-login or github.com/org-login",
+                                    "organization",
+                                  )}
+                                  {renderList(
+                                    source,
+                                    "ignoredOrganizations",
+                                    "Ignored organizations",
+                                    "Ignored organization",
+                                    "Add ignored org",
+                                    "org-login or github.com/org-login",
+                                    "organization",
+                                  )}
+                                  {renderList(
+                                    source,
+                                    "ignoredRepositories",
+                                    "Ignored repositories",
+                                    "Ignored repository",
+                                    "Add ignored repo",
+                                    "owner/repo or github.com/owner/repo",
+                                    "repository",
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
 
-                <div className="source-stack">
-                  {form.publishTargets.map((target, index) => {
-                    const targetRepositoryId = `${target.id}-publish-repository`;
-                    const targetBranchId = `${target.id}-publish-branch`;
-                    const targetPathId = `${target.id}-publish-path`;
-                    const targetSummaryText = publishTargetSummary(target);
-                    const targetValidation = formValidation.publishTargets[target.id];
-                    const isActiveTarget = activePublishTargetId === target.id;
-                    const publishRepositoryResolveDisabled =
-                      !target.publishRepository.value.trim() ||
-                      target.publishRepository.status === "resolving" ||
-                      target.publishRepository.status === "resolved";
-                    const needsAttention = Boolean(
-                      targetValidation &&
-                      (targetValidation.publishRepository ||
-                        targetValidation.branch ||
-                        targetValidation.path),
-                    );
-
-                    return (
-                      <article
-                        className={`source-card ${isActiveTarget ? "is-active" : ""}`}
-                        key={target.id}
+                {activeTab === "publish" && (
+                  <section className="builder-form-section list-section">
+                    <div className="section-heading section-heading-row">
+                      <h3>Publish Targets</h3>
+                      <button
+                        className="tool-button"
+                        type="button"
+                        onClick={() => setShowPublishTargetPicker(true)}
                       >
-                        <div className="source-header">
-                          <button
-                            aria-expanded={isActiveTarget}
-                            className="card-toggle"
-                            type="button"
-                            onClick={() => setActivePublishTargetId(target.id)}
-                          >
-                            <span>
-                              <h4>
-                                GitHub
-                                {targetSummaryText && (
-                                  <>
-                                    {" "}
-                                    <span className="provider-account">({targetSummaryText})</span>
-                                  </>
-                                )}
-                              </h4>
-                            </span>
-                            <span
-                              className={`card-state ${needsAttention ? "is-invalid" : "is-valid"}`}
-                            >
-                              {needsAttention
-                                ? "Action required"
-                                : isActiveTarget
-                                  ? "Editing"
-                                  : "Edit"}
-                            </span>
-                          </button>
-                          <button
-                            aria-label={`Remove publish target ${index + 1}`}
-                            className="icon-button"
-                            disabled={form.publishTargets.length === 1}
-                            type="button"
-                            onClick={() => removePublishTarget(target.id)}
-                          >
-                            <Trash2 aria-hidden="true" size={18} />
-                          </button>
-                        </div>
+                        <Plus aria-hidden="true" size={18} />
+                        Add target
+                      </button>
+                    </div>
 
-                        {isActiveTarget && (
-                          <div className="field-grid card-body">
-                            <div
-                              className={`field field-wide ${
-                                targetValidation?.publishRepository ? "is-invalid" : ""
-                              }`}
-                            >
-                              <label className="field-label" htmlFor={targetRepositoryId}>
-                                Repository
-                              </label>
-                              <div
-                                className={`resolve-control ${
-                                  target.publishRepository.status === "resolved"
-                                    ? "is-resolved"
-                                    : ""
-                                } ${targetValidation?.publishRepository ? "is-invalid" : ""}`}
+                    <div className="source-stack">
+                      {form.publishTargets.map((target, index) => {
+                        const targetRepositoryId = `${target.id}-publish-repository`;
+                        const targetBranchId = `${target.id}-publish-branch`;
+                        const targetPathId = `${target.id}-publish-path`;
+                        const targetSummaryText = publishTargetSummary(target);
+                        const targetValidation = formValidation.publishTargets[target.id];
+                        const isActiveTarget = activePublishTargetId === target.id;
+                        const publishRepositoryResolveDisabled =
+                          !target.publishRepository.value.trim() ||
+                          target.publishRepository.status === "resolving" ||
+                          target.publishRepository.status === "resolved";
+                        const needsAttention = Boolean(
+                          targetValidation &&
+                          (targetValidation.publishRepository ||
+                            targetValidation.branch ||
+                            targetValidation.path),
+                        );
+
+                        return (
+                          <article
+                            className={`source-card ${isActiveTarget ? "is-active" : ""}`}
+                            key={target.id}
+                          >
+                            <div className="source-header">
+                              <button
+                                aria-expanded={isActiveTarget}
+                                className="card-toggle"
+                                type="button"
+                                onClick={() => setActivePublishTargetId(target.id)}
                               >
-                                <input
-                                  {...configBuilderNoAutofillProps}
-                                  aria-label={`Publish target ${index + 1} repository`}
-                                  aria-describedby={`${targetRepositoryId}-error`}
-                                  aria-invalid={Boolean(targetValidation?.publishRepository)}
-                                  id={targetRepositoryId}
-                                  placeholder="owner/repo or github.com/owner/repo"
-                                  readOnly={target.publishRepository.status === "resolved"}
-                                  value={target.publishRepository.value}
-                                  onChange={(event) =>
-                                    updatePublishTargetRepository(target.id, event.target.value)
-                                  }
-                                  onKeyDown={(event) =>
-                                    resolveOnEnter(
-                                      event,
-                                      () => resolvePublishTargetRepository(target.id),
-                                      publishRepositoryResolveDisabled,
-                                    )
-                                  }
-                                />
-                                {target.publishRepository.status === "resolved" ? (
-                                  <>
-                                    <span
-                                      className="resolved-indicator"
-                                      aria-label={`Publish target ${index + 1} repository resolved`}
-                                    >
-                                      <CheckCircle2 aria-hidden="true" size={18} />
-                                    </span>
-                                    <button
-                                      className="icon-button"
-                                      type="button"
-                                      aria-label={`Clear publish target ${index + 1} repository`}
-                                      onClick={() => updatePublishTargetRepository(target.id, "")}
-                                    >
-                                      <Trash2 aria-hidden="true" size={18} />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button
-                                    aria-label={`Resolve publish target ${index + 1} repository`}
-                                    className="icon-button"
-                                    disabled={publishRepositoryResolveDisabled}
-                                    type="button"
-                                    onClick={() => resolvePublishTargetRepository(target.id)}
+                                <span>
+                                  <h4>
+                                    GitHub
+                                    {targetSummaryText && (
+                                      <>
+                                        {" "}
+                                        <span className="provider-account">
+                                          ({targetSummaryText})
+                                        </span>
+                                      </>
+                                    )}
+                                  </h4>
+                                </span>
+                                <span
+                                  className={`card-state ${needsAttention ? "is-invalid" : "is-valid"}`}
+                                >
+                                  {needsAttention
+                                    ? "Action required"
+                                    : isActiveTarget
+                                      ? "Editing"
+                                      : "Edit"}
+                                </span>
+                              </button>
+                              <button
+                                aria-label={`Remove publish target ${index + 1}`}
+                                className="icon-button"
+                                disabled={form.publishTargets.length === 1}
+                                type="button"
+                                onClick={() => removePublishTarget(target.id)}
+                              >
+                                <Trash2 aria-hidden="true" size={18} />
+                              </button>
+                            </div>
+
+                            {isActiveTarget && (
+                              <div className="field-grid card-body">
+                                <div
+                                  className={`field field-wide ${
+                                    targetValidation?.publishRepository ? "is-invalid" : ""
+                                  }`}
+                                >
+                                  <label className="field-label" htmlFor={targetRepositoryId}>
+                                    Repository
+                                  </label>
+                                  <div
+                                    className={`resolve-control ${
+                                      target.publishRepository.status === "resolved"
+                                        ? "is-resolved"
+                                        : ""
+                                    } ${targetValidation?.publishRepository ? "is-invalid" : ""}`}
                                   >
-                                    <Search aria-hidden="true" size={18} />
-                                  </button>
-                                )}
+                                    <input
+                                      {...configBuilderNoAutofillProps}
+                                      aria-label={`Publish target ${index + 1} repository`}
+                                      aria-describedby={`${targetRepositoryId}-error`}
+                                      aria-invalid={Boolean(targetValidation?.publishRepository)}
+                                      id={targetRepositoryId}
+                                      placeholder="owner/repo or github.com/owner/repo"
+                                      readOnly={target.publishRepository.status === "resolved"}
+                                      value={target.publishRepository.value}
+                                      onChange={(event) =>
+                                        updatePublishTargetRepository(target.id, event.target.value)
+                                      }
+                                      onKeyDown={(event) =>
+                                        resolveOnEnter(
+                                          event,
+                                          () => resolvePublishTargetRepository(target.id),
+                                          publishRepositoryResolveDisabled,
+                                        )
+                                      }
+                                    />
+                                    {target.publishRepository.status === "resolved" ? (
+                                      <>
+                                        <span
+                                          className="resolved-indicator"
+                                          aria-label={`Publish target ${index + 1} repository resolved`}
+                                        >
+                                          <CheckCircle2 aria-hidden="true" size={18} />
+                                        </span>
+                                        <button
+                                          className="icon-button"
+                                          type="button"
+                                          aria-label={`Clear publish target ${index + 1} repository`}
+                                          onClick={() =>
+                                            updatePublishTargetRepository(target.id, "")
+                                          }
+                                        >
+                                          <Trash2 aria-hidden="true" size={18} />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        aria-label={`Resolve publish target ${index + 1} repository`}
+                                        className="icon-button"
+                                        disabled={publishRepositoryResolveDisabled}
+                                        type="button"
+                                        onClick={() => resolvePublishTargetRepository(target.id)}
+                                      >
+                                        <Search aria-hidden="true" size={18} />
+                                      </button>
+                                    )}
+                                  </div>
+                                  {renderFieldError(
+                                    `${targetRepositoryId}-error`,
+                                    targetValidation?.publishRepository,
+                                  )}
+                                  {target.publishRepository.status !== "resolved" &&
+                                    target.publishRepository.value.trim() &&
+                                    renderResolveNote(target.publishRepository, () =>
+                                      openManualResolve({
+                                        scope: "destinationRepository",
+                                        targetId: target.id,
+                                        label: "Publish repository",
+                                        value: target.publishRepository.value,
+                                        commands:
+                                          target.publishRepository.commands ??
+                                          fallbackCommands(
+                                            "repository",
+                                            target.publishRepository.value,
+                                            WRITE_TOKEN_ENV,
+                                          ),
+                                      }),
+                                    )}
+                                </div>
+
+                                <label
+                                  className={`field ${targetValidation?.branch ? "is-invalid" : ""}`}
+                                  htmlFor={targetBranchId}
+                                >
+                                  <span>Publish branch</span>
+                                  <input
+                                    {...configBuilderNoAutofillProps}
+                                    aria-label={`Publish target ${index + 1} branch`}
+                                    aria-describedby={`${targetBranchId}-error`}
+                                    aria-invalid={Boolean(targetValidation?.branch)}
+                                    id={targetBranchId}
+                                    value={target.branch}
+                                    onChange={(event) =>
+                                      updatePublishTargetField(
+                                        target.id,
+                                        "branch",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                  {renderFieldError(
+                                    `${targetBranchId}-error`,
+                                    targetValidation?.branch,
+                                  )}
+                                </label>
+
+                                <label
+                                  className={`field ${targetValidation?.path ? "is-invalid" : ""}`}
+                                  htmlFor={targetPathId}
+                                >
+                                  <span>Publish path</span>
+                                  <input
+                                    {...configBuilderNoAutofillProps}
+                                    aria-label={`Publish target ${index + 1} path`}
+                                    aria-describedby={`${targetPathId}-error`}
+                                    aria-invalid={Boolean(targetValidation?.path)}
+                                    id={targetPathId}
+                                    value={target.path}
+                                    onChange={(event) =>
+                                      updatePublishTargetField(
+                                        target.id,
+                                        "path",
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                  {renderFieldError(
+                                    `${targetPathId}-error`,
+                                    targetValidation?.path,
+                                  )}
+                                </label>
+
+                                <div className="env-panel field-wide">
+                                  <strong>Generated publish target env names</strong>
+                                  <div>
+                                    <code>{WRITE_TOKEN_ENV}</code>
+                                    <span>README publish</span>
+                                  </div>
+                                </div>
                               </div>
-                              {renderFieldError(
-                                `${targetRepositoryId}-error`,
-                                targetValidation?.publishRepository,
-                              )}
-                              {target.publishRepository.status !== "resolved" &&
-                                target.publishRepository.value.trim() &&
-                                renderResolveNote(target.publishRepository, () =>
-                                  openManualResolve({
-                                    scope: "destinationRepository",
-                                    targetId: target.id,
-                                    label: "Publish repository",
-                                    value: target.publishRepository.value,
-                                    commands:
-                                      target.publishRepository.commands ??
-                                      fallbackCommands(
-                                        "repository",
-                                        target.publishRepository.value,
-                                        WRITE_TOKEN_ENV,
-                                      ),
-                                  }),
-                                )}
-                            </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+              </div>
+            </div>
 
-                            <label
-                              className={`field ${targetValidation?.branch ? "is-invalid" : ""}`}
-                              htmlFor={targetBranchId}
-                            >
-                              <span>Publish branch</span>
-                              <input
-                                {...configBuilderNoAutofillProps}
-                                aria-label={`Publish target ${index + 1} branch`}
-                                aria-describedby={`${targetBranchId}-error`}
-                                aria-invalid={Boolean(targetValidation?.branch)}
-                                id={targetBranchId}
-                                value={target.branch}
-                                onChange={(event) =>
-                                  updatePublishTargetField(target.id, "branch", event.target.value)
-                                }
-                              />
-                              {renderFieldError(
-                                `${targetBranchId}-error`,
-                                targetValidation?.branch,
-                              )}
-                            </label>
-
-                            <label
-                              className={`field ${targetValidation?.path ? "is-invalid" : ""}`}
-                              htmlFor={targetPathId}
-                            >
-                              <span>Publish path</span>
-                              <input
-                                {...configBuilderNoAutofillProps}
-                                aria-label={`Publish target ${index + 1} path`}
-                                aria-describedby={`${targetPathId}-error`}
-                                aria-invalid={Boolean(targetValidation?.path)}
-                                id={targetPathId}
-                                value={target.path}
-                                onChange={(event) =>
-                                  updatePublishTargetField(target.id, "path", event.target.value)
-                                }
-                              />
-                              {renderFieldError(`${targetPathId}-error`, targetValidation?.path)}
-                            </label>
-
-                            <div className="env-panel field-wide">
-                              <strong>Generated publish target env names</strong>
-                              <div>
-                                <code>{WRITE_TOKEN_ENV}</code>
-                                <span>README publish</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })}
+            <div className="builder-panel output-panel">
+              <div className="panel-heading output-heading">
+                <div>
+                  <h2>Output</h2>
                 </div>
-              </section>
-            )}
-          </div>
-        </div>
-
-        <div className="builder-panel output-panel">
-          <div className="panel-heading output-heading">
-            <div>
-              <h2>Output</h2>
-            </div>
-            <div className={ready ? "status is-valid" : "status is-invalid"}>
-              {ready ? (
-                <CheckCircle2 aria-hidden="true" size={18} />
-              ) : (
-                <CircleAlert aria-hidden="true" size={18} />
-              )}
-              {ready ? "Ready" : "Fix inputs"}
-            </div>
-          </div>
-
-          <div className="action-row">
-            <button
-              className="tool-button"
-              disabled={!ready}
-              type="button"
-              onClick={() => copyValue("json", schemaValidation.normalizedJson)}
-            >
-              <Copy aria-hidden="true" size={18} />
-              {copied === "json" ? "Copied" : "Copy JSON"}
-            </button>
-            <button
-              className="tool-button"
-              disabled={!ready}
-              type="button"
-              onClick={() => copyValue("base64", base64)}
-            >
-              <Copy aria-hidden="true" size={18} />
-              {copied === "base64" ? "Copied" : "Copy Base64"}
-            </button>
-            <button className="tool-button" disabled={!ready} type="button" onClick={downloadJson}>
-              <Download aria-hidden="true" size={18} />
-              Download
-            </button>
-          </div>
-
-          <pre className="json-preview">{schemaValidation.normalizedJson}</pre>
-        </div>
-      </div>
-      {showSourcePicker && (
-        <div className="manual-modal-backdrop">
-          <dialog open aria-labelledby="source-picker-title" className="manual-modal source-picker">
-            <div className="manual-modal__header">
-              <div>
-                <p className="manual-modal__eyebrow">New source</p>
-                <h2 id="source-picker-title">Choose provider</h2>
+                <div className={ready ? "status is-valid" : "status is-invalid"}>
+                  {ready ? (
+                    <CheckCircle2 aria-hidden="true" size={18} />
+                  ) : (
+                    <CircleAlert aria-hidden="true" size={18} />
+                  )}
+                  {ready ? "Ready" : "Fix inputs"}
+                </div>
               </div>
-              <button
-                aria-label="Back to builder"
-                className="icon-button"
-                type="button"
-                onClick={() => setShowSourcePicker(false)}
-              >
-                <X aria-hidden="true" size={18} />
-              </button>
-            </div>
 
-            <div className="provider-choice-grid">
-              <button className="provider-choice" type="button" onClick={() => addSource("github")}>
-                <span>GitHub</span>
-                <small>Issues, pull requests, repositories</small>
-              </button>
-            </div>
-          </dialog>
-        </div>
-      )}
-      {showPublishTargetPicker && (
-        <div className="manual-modal-backdrop">
-          <dialog
-            open
-            aria-labelledby="publish-target-picker-title"
-            className="manual-modal source-picker"
-          >
-            <div className="manual-modal__header">
-              <div>
-                <p className="manual-modal__eyebrow">New publish target</p>
-                <h2 id="publish-target-picker-title">Choose provider</h2>
+              <div className="action-row">
+                <button
+                  className="tool-button"
+                  disabled={!ready}
+                  type="button"
+                  onClick={() => copyValue("json", schemaValidation.normalizedJson)}
+                >
+                  <Copy aria-hidden="true" size={18} />
+                  {copied === "json" ? "Copied" : "Copy JSON"}
+                </button>
+                <button
+                  className="tool-button"
+                  disabled={!ready}
+                  type="button"
+                  onClick={() => copyValue("base64", base64)}
+                >
+                  <Copy aria-hidden="true" size={18} />
+                  {copied === "base64" ? "Copied" : "Copy Base64"}
+                </button>
+                <button
+                  className="tool-button"
+                  disabled={!ready}
+                  type="button"
+                  onClick={downloadJson}
+                >
+                  <Download aria-hidden="true" size={18} />
+                  Download
+                </button>
               </div>
-              <button
-                aria-label="Back to builder"
-                className="icon-button"
-                type="button"
-                onClick={() => setShowPublishTargetPicker(false)}
-              >
-                <X aria-hidden="true" size={18} />
-              </button>
-            </div>
 
-            <div className="provider-choice-grid">
-              <button
-                className="provider-choice"
-                type="button"
-                onClick={() => addPublishTarget("github")}
-              >
-                <span>GitHub</span>
-                <small>Publish rendered README</small>
-              </button>
+              <pre className="json-preview">{schemaValidation.normalizedJson}</pre>
             </div>
-          </dialog>
-        </div>
-      )}
-      {manualResolve && (
-        <div className="manual-modal-backdrop">
-          <dialog open aria-labelledby="manual-resolve-title" className="manual-modal">
-            <div className="manual-modal__header">
-              <div>
-                <p className="manual-modal__eyebrow">Manual resolve</p>
-                <h2 id="manual-resolve-title">{manualResolve.label}</h2>
-              </div>
-              <button
-                aria-label="Back to builder"
-                className="icon-button"
-                type="button"
-                onClick={closeManualResolve}
+          </div>
+          {showSourcePicker && (
+            <div className="manual-modal-backdrop">
+              <dialog
+                open
+                aria-labelledby="source-picker-title"
+                className="manual-modal source-picker"
               >
-                <X aria-hidden="true" size={18} />
-              </button>
-            </div>
-
-            <p className="manual-modal__copy">
-              We could not read <strong>{manualResolve.value}</strong> from public GitHub. Run one
-              command with the right token available, then paste only the <code>node_id</code>{" "}
-              output here.
-            </p>
-
-            <div className="manual-command-stack">
-              {manualResolve.commands.map((command, index) => (
-                <div className="manual-command" key={command}>
-                  <code>{command}</code>
+                <div className="manual-modal__header">
+                  <div>
+                    <p className="manual-modal__eyebrow">New source</p>
+                    <h2 id="source-picker-title">Choose provider</h2>
+                  </div>
                   <button
-                    className="tool-button"
+                    aria-label="Back to builder"
+                    className="icon-button"
                     type="button"
-                    onClick={() => copyValue(`manual-command-${index}`, command)}
+                    onClick={() => setShowSourcePicker(false)}
                   >
-                    <Copy aria-hidden="true" size={18} />
-                    {copied === `manual-command-${index}` ? "Copied" : "Copy"}
+                    <X aria-hidden="true" size={18} />
                   </button>
                 </div>
-              ))}
+
+                <div className="provider-choice-grid">
+                  <button
+                    className="provider-choice"
+                    type="button"
+                    onClick={() => addSource("github")}
+                  >
+                    <span>GitHub</span>
+                    <small>Issues, pull requests, repositories</small>
+                  </button>
+                </div>
+              </dialog>
             </div>
-
-            <label className="field" htmlFor="manual-node-id">
-              <span>GitHub node_id</span>
-              <input
-                {...configBuilderNoAutofillProps}
-                autoFocus
-                aria-label="GitHub node_id"
-                id="manual-node-id"
-                placeholder="paste node_id"
-                value={manualNodeId}
-                onChange={(event) => setManualNodeId(event.target.value)}
-              />
-            </label>
-
-            <div className="manual-modal__actions">
-              <button className="tool-button" type="button" onClick={closeManualResolve}>
-                Back to builder
-              </button>
-              <button
-                className="tool-button manual-modal__primary"
-                disabled={!manualNodeId.trim()}
-                type="button"
-                onClick={submitManualNodeId}
+          )}
+          {showPublishTargetPicker && (
+            <div className="manual-modal-backdrop">
+              <dialog
+                open
+                aria-labelledby="publish-target-picker-title"
+                className="manual-modal source-picker"
               >
-                Save node ID
-              </button>
+                <div className="manual-modal__header">
+                  <div>
+                    <p className="manual-modal__eyebrow">New publish target</p>
+                    <h2 id="publish-target-picker-title">Choose provider</h2>
+                  </div>
+                  <button
+                    aria-label="Back to builder"
+                    className="icon-button"
+                    type="button"
+                    onClick={() => setShowPublishTargetPicker(false)}
+                  >
+                    <X aria-hidden="true" size={18} />
+                  </button>
+                </div>
+
+                <div className="provider-choice-grid">
+                  <button
+                    className="provider-choice"
+                    type="button"
+                    onClick={() => addPublishTarget("github")}
+                  >
+                    <span>GitHub</span>
+                    <small>Publish rendered README</small>
+                  </button>
+                </div>
+              </dialog>
             </div>
-          </dialog>
-        </div>
+          )}
+          {manualResolve && (
+            <div className="manual-modal-backdrop">
+              <dialog open aria-labelledby="manual-resolve-title" className="manual-modal">
+                <div className="manual-modal__header">
+                  <div>
+                    <p className="manual-modal__eyebrow">Manual resolve</p>
+                    <h2 id="manual-resolve-title">{manualResolve.label}</h2>
+                  </div>
+                  <button
+                    aria-label="Back to builder"
+                    className="icon-button"
+                    type="button"
+                    onClick={closeManualResolve}
+                  >
+                    <X aria-hidden="true" size={18} />
+                  </button>
+                </div>
+
+                <p className="manual-modal__copy">
+                  We could not read <strong>{manualResolve.value}</strong> from public GitHub. Run
+                  one command with the right token available, then paste only the{" "}
+                  <code>node_id</code> output here.
+                </p>
+
+                <div className="manual-command-stack">
+                  {manualResolve.commands.map((command, index) => (
+                    <div className="manual-command" key={command}>
+                      <code>{command}</code>
+                      <button
+                        className="tool-button"
+                        type="button"
+                        onClick={() => copyValue(`manual-command-${index}`, command)}
+                      >
+                        <Copy aria-hidden="true" size={18} />
+                        {copied === `manual-command-${index}` ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <label className="field" htmlFor="manual-node-id">
+                  <span>GitHub node_id</span>
+                  <input
+                    {...configBuilderNoAutofillProps}
+                    autoFocus
+                    aria-label="GitHub node_id"
+                    id="manual-node-id"
+                    placeholder="paste node_id"
+                    value={manualNodeId}
+                    onChange={(event) => setManualNodeId(event.target.value)}
+                  />
+                </label>
+
+                <div className="manual-modal__actions">
+                  <button className="tool-button" type="button" onClick={closeManualResolve}>
+                    Back to builder
+                  </button>
+                  <button
+                    className="tool-button manual-modal__primary"
+                    disabled={!manualNodeId.trim()}
+                    type="button"
+                    onClick={submitManualNodeId}
+                  >
+                    Save node ID
+                  </button>
+                </div>
+              </dialog>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
