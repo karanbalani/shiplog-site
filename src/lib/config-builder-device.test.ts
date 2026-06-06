@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
+  CONFIG_BUILDER_MIN_WIDTH,
   getConfigBuilderDeviceBlockReason,
   shouldBlockConfigBuilderDevice,
 } from "./config-builder-device";
@@ -48,4 +50,18 @@ test("blocks mobile and tablet browsers when they report coarse pointer input", 
 
   expect(shouldBlockConfigBuilderDevice(tabletBrowser)).toBe(true);
   expect(getConfigBuilderDeviceBlockReason(tabletBrowser)).toBe("device");
+});
+
+test("ships a CSS fallback gate before React hydration", () => {
+  const component = readFileSync(
+    new URL("../components/ConfigBuilder.tsx", import.meta.url),
+    "utf8",
+  );
+  const css = readFileSync(new URL("../styles/config-builder.css", import.meta.url), "utf8");
+
+  expect(component).toContain("builder-device-fallback");
+  expect(component).toContain("builder-shell-interactive");
+  expect(css).toContain(".builder-device-fallback");
+  expect(css).toContain(".builder-shell-interactive");
+  expect(css).toContain(`@media (max-width: ${CONFIG_BUILDER_MIN_WIDTH - 1}px)`);
 });

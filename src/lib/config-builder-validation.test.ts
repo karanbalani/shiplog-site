@@ -1,5 +1,10 @@
 import { expect, test } from "bun:test";
-import { createInitialBuilderForm, createItem, createPublishTarget } from "./config-builder-model";
+import {
+  createInitialBuilderForm,
+  createItem,
+  createPublishTarget,
+  createSource,
+} from "./config-builder-model";
 import { firstInvalidBuilderTab, validateBuilderForm } from "./config-builder-validation";
 
 test("starts users on the first invalid tab", () => {
@@ -75,4 +80,65 @@ test("marks profile and publish text fields invalid when schema-required values 
   expect(validation.profile.lookbackDays).toBe("Use 0 to 90 days.");
   expect(validation.publishTargets["publish-target-2"]?.branch).toBe("Enter a publish branch.");
   expect(validation.publishTargets["publish-target-2"]?.path).toBe("Enter a publish path.");
+});
+
+test("marks duplicate resolved collection accounts invalid", () => {
+  const form = createInitialBuilderForm();
+  form.displayName = "Karan";
+  const firstSource = form.sources[0];
+  const secondSource = createSource("source-github-2");
+  for (const source of [firstSource, secondSource]) {
+    source.account.nodeId = "U_karanbalani";
+    source.account.status = "resolved";
+    source.account.value = "karanbalani";
+    source.account.resolvedName = "karanbalani";
+  }
+  form.sources = [firstSource, secondSource];
+
+  const publishTarget = form.publishTargets[0];
+  publishTarget.publishRepository.nodeId = "R_shiplog";
+  publishTarget.publishRepository.status = "resolved";
+  publishTarget.publishRepository.value = "karanbalani/shiplog";
+
+  const validation = validateBuilderForm(form);
+
+  expect(validation.ready).toBe(false);
+  expect(validation.tabs.collection).toBe("invalid");
+  expect(validation.sources["source-github-1"]?.account).toBe(
+    "This GitHub account is already added.",
+  );
+  expect(validation.sources["source-github-2"]?.account).toBe(
+    "This GitHub account is already added.",
+  );
+});
+
+test("marks duplicate resolved publish repositories invalid", () => {
+  const form = createInitialBuilderForm();
+  form.displayName = "Karan";
+  const source = form.sources[0];
+  source.account.nodeId = "U_karanbalani";
+  source.account.status = "resolved";
+  source.account.value = "karanbalani";
+  source.account.resolvedName = "karanbalani";
+
+  const firstTarget = form.publishTargets[0];
+  const secondTarget = createPublishTarget("publish-target-github-2");
+  for (const target of [firstTarget, secondTarget]) {
+    target.publishRepository.nodeId = "R_shiplog";
+    target.publishRepository.status = "resolved";
+    target.publishRepository.value = "karanbalani/shiplog";
+    target.publishRepository.resolvedName = "karanbalani/shiplog";
+  }
+  form.publishTargets = [firstTarget, secondTarget];
+
+  const validation = validateBuilderForm(form);
+
+  expect(validation.ready).toBe(false);
+  expect(validation.tabs.publish).toBe("invalid");
+  expect(validation.publishTargets["publish-target-github-1"]?.publishRepository).toBe(
+    "This publish repository is already added.",
+  );
+  expect(validation.publishTargets["publish-target-github-2"]?.publishRepository).toBe(
+    "This publish repository is already added.",
+  );
 });
