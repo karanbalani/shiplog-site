@@ -20,12 +20,20 @@ const files: SyncFile[] = [
     to: "src/generated/shiplog/shiplog.config.schema.json",
   },
   {
+    from: "schemas/shiplog.config.schema.json",
+    to: "public/schemas/shiplog.config.schema.json",
+  },
+  {
     from: "shiplog.config.example.json",
     to: "src/generated/shiplog/shiplog.config.example.json",
   },
   {
     from: "schemas/render.config.schema.json",
     to: "src/generated/shiplog/render.config.schema.json",
+  },
+  {
+    from: "schemas/render.config.schema.json",
+    to: "public/schemas/render.config.schema.json",
   },
   {
     from: ".shiplog/render.json",
