@@ -31,7 +31,8 @@ Deployments are configured for Netlify in `netlify.toml`.
 The config builder and Rendor Studio use generated assets from the canonical `shiplog` repo.
 Generated application files are ignored by Git and refreshed before `dev`, `check`, and `build`.
 The same sync also publishes JSON schemas into `public/schemas/` so editors can resolve
-URLs such as `https://shiplog.karanbalani.tech/schemas/render.config.schema.json`.
+URLs such as `https://shiplog.karanbalani.tech/schemas/shiplog.config.schema.json`
+and `https://shiplog.karanbalani.tech/schemas/render.config.schema.json`.
 
 ```bash
 bun run sync:shiplog

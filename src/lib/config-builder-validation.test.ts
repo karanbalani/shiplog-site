@@ -1,9 +1,11 @@
 import { expect, test } from "bun:test";
 import {
+  buildConfig,
   createInitialBuilderForm,
   createItem,
   createPublishTarget,
   createSource,
+  SHIPLOG_CONFIG_SCHEMA_URL,
 } from "./config-builder-model";
 import { firstInvalidBuilderTab, validateBuilderForm } from "./config-builder-validation";
 
@@ -11,6 +13,12 @@ test("starts users on the first invalid tab", () => {
   const validation = validateBuilderForm(createInitialBuilderForm());
 
   expect(firstInvalidBuilderTab(validation)).toBe("profile");
+});
+
+test("builds config with the public schema URL", () => {
+  const config = buildConfig(createInitialBuilderForm());
+
+  expect(config.$schema).toBe(SHIPLOG_CONFIG_SCHEMA_URL);
 });
 
 test("marks empty required resolver fields on their tabs", () => {

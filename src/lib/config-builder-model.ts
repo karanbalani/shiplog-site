@@ -1,5 +1,7 @@
 export const READ_TOKEN_ENV = "GH_RO_CLASSIC_TOKEN";
 export const WRITE_TOKEN_ENV = "GH_RW_REPO_TOKEN";
+export const SHIPLOG_CONFIG_SCHEMA_URL =
+  "https://shiplog.karanbalani.tech/schemas/shiplog.config.schema.json";
 
 export type ResolveStatus = "idle" | "resolving" | "resolved" | "error";
 export type ResolveListKey =
@@ -93,7 +95,7 @@ export function tokenEnvForOrganization(login: string): string {
 
 export function buildConfig(form: BuilderForm) {
   return {
-    $schema: "./schemas/shiplog.config.schema.json",
+    $schema: SHIPLOG_CONFIG_SCHEMA_URL,
     version: 1,
     profile: {
       displayName: form.displayName.trim(),
