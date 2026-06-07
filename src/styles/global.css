@@ -315,6 +315,16 @@ h3 {
   padding: 12px 16px;
 }
 
+.tool-button {
+  padding: 10px 14px;
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
 .button-primary,
 .button:hover,
 .tool-button:hover,

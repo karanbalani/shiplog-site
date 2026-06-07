@@ -29,6 +29,27 @@ test("blocks narrow screens even with a desktop user agent", () => {
   expect(getConfigBuilderDeviceBlockReason(narrowDesktop)).toBe("narrow");
 });
 
+test("uses the shared minimum desktop width as the narrow boundary", () => {
+  const desktopBrowser = {
+    pointerCoarse: false,
+    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+    userAgentDataMobile: false,
+  };
+
+  expect(
+    getConfigBuilderDeviceBlockReason({
+      ...desktopBrowser,
+      width: CONFIG_BUILDER_MIN_WIDTH - 1,
+    }),
+  ).toBe("narrow");
+  expect(
+    getConfigBuilderDeviceBlockReason({
+      ...desktopBrowser,
+      width: CONFIG_BUILDER_MIN_WIDTH,
+    }),
+  ).toBeNull();
+});
+
 test("blocks mobile and tablet browsers when they report coarse pointer input", () => {
   const mobileBrowser = {
     pointerCoarse: true,
@@ -53,15 +74,47 @@ test("blocks mobile and tablet browsers when they report coarse pointer input", 
 });
 
 test("ships a CSS fallback gate before React hydration", () => {
-  const component = readFileSync(
+  const configBuilder = readFileSync(
     new URL("../components/ConfigBuilder.tsx", import.meta.url),
     "utf8",
   );
-  const css = readFileSync(new URL("../styles/config-builder.css", import.meta.url), "utf8");
+  const rendorStudio = readFileSync(
+    new URL("../components/RendorStudio.tsx", import.meta.url),
+    "utf8",
+  );
+  const gate = readFileSync(new URL("../components/DeviceGate.tsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../styles/device-gate.css", import.meta.url), "utf8");
 
-  expect(component).toContain("builder-device-fallback");
-  expect(component).toContain("builder-shell-interactive");
+  expect(configBuilder).toContain("builder-device-fallback");
+  expect(configBuilder).toContain("builder-shell-interactive");
+  expect(rendorStudio).toContain("builder-device-fallback");
+  expect(rendorStudio).toContain("builder-shell-interactive");
+  expect(gate).toContain("builder-device-gate");
+  expect(gate).toContain("builder-device-gate__eyebrow");
   expect(css).toContain(".builder-device-fallback");
   expect(css).toContain(".builder-shell-interactive");
+  expect(css).toContain(".builder-device-gate__eyebrow");
   expect(css).toContain(`@media (max-width: ${CONFIG_BUILDER_MIN_WIDTH - 1}px)`);
+});
+
+test("hydrates device gates from the same server-compatible shell", () => {
+  const configBuilder = readFileSync(
+    new URL("../components/ConfigBuilder.tsx", import.meta.url),
+    "utf8",
+  );
+  const rendorStudio = readFileSync(
+    new URL("../components/RendorStudio.tsx", import.meta.url),
+    "utf8",
+  );
+  const css = readFileSync(new URL("../styles/device-gate.css", import.meta.url), "utf8");
+
+  expect(configBuilder).toMatch(/useState<ConfigBuilderDeviceBlockReason \| null>\(\s*null,?\s*\)/);
+  expect(rendorStudio).toMatch(/useState<ConfigBuilderDeviceBlockReason \| null>\(\s*null,?\s*\)/);
+  expect(configBuilder).not.toMatch(
+    /useState<ConfigBuilderDeviceBlockReason \| null>\(\(\) =>[\s\S]*?readConfigBuilderDevice\(\)/,
+  );
+  expect(rendorStudio).not.toMatch(
+    /useState<ConfigBuilderDeviceBlockReason \| null>\(\(\) =>[\s\S]*?readConfigBuilderDevice\(\)/,
+  );
+  expect(css).toContain(".builder-shell.builder-device-fallback.is-runtime-active");
 });

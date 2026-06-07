@@ -1,11 +1,11 @@
 ---
-import ConfigBuilder from '../components/ConfigBuilder'
 import FontPreload from '../components/FontPreload.astro'
+import RendorStudio from '../components/RendorStudio'
 import ThemeInit from '../components/ThemeInit.astro'
 import ThemeToggle from '../components/ThemeToggle.astro'
 import '../styles/global.css'
 import '../styles/device-gate.css'
-import '../styles/config-builder.css'
+import '../styles/rendor-studio.css'
 ---
 
 <!doctype html>
@@ -15,28 +15,28 @@ import '../styles/config-builder.css'
     <meta name="viewport" content="width=device-width" />
     <meta
       name="description"
-      content="Build and Base64-encode a shiplog config in your browser."
+      content="Build shiplog render.json files with Neon-backed live markdown preview."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <FontPreload />
-    <title>Config Builder - shiplog</title>
+    <title>Rendor Studio - shiplog</title>
     <ThemeInit />
   </head>
-  <body class="builder-root">
+  <body class="studio-root">
     <header class="site-header">
       <a class="brand" href="/" aria-label="shiplog home">
         <span class="brand-mark" aria-hidden="true">sl</span>
         <span>shiplog</span>
       </a>
       <nav class="top-nav" aria-label="Main navigation">
-        <a aria-current="page" href="/config-builder/">Config Builder</a>
-        <a href="/rendor-studio/">Rendor Studio</a>
+        <a href="/config-builder/">Config Builder</a>
+        <a aria-current="page" href="/rendor-studio/">Rendor Studio</a>
         <a href="https://github.com/karanbalani/shiplog">GitHub</a>
       </nav>
     </header>
 
-    <main class="builder-page">
-      <ConfigBuilder client:load />
+    <main class="studio-page">
+      <RendorStudio client:load />
     </main>
     <ThemeToggle />
   </body>

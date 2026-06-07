@@ -1,4 +1,4 @@
-export const CONFIG_BUILDER_MIN_WIDTH = 960;
+export const CONFIG_BUILDER_MIN_WIDTH = 1240;
 
 export type ConfigBuilderDevice = {
   platform?: string;

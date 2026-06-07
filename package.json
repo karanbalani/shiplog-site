@@ -18,11 +18,14 @@
   "dependencies": {
     "@astrojs/react": "^5.0.6",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@neondatabase/serverless": "^1.1.0",
     "ajv": "^8.20.0",
     "astro": "^6.4.2",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
