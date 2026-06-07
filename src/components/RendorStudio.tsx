@@ -1197,7 +1197,7 @@ function BlockEditor({
               <input
                 {...configBuilderNoAutofillProps}
                 value={block.separator ?? ""}
-                placeholder="newline by default"
+                placeholder="Markdown line break by default"
                 onChange={(event) =>
                   onChange({
                     ...block,

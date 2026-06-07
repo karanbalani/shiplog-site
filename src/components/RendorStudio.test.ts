@@ -92,6 +92,7 @@ test("supports repeat blocks and block visibility in guided mode", () => {
   expect(source).toContain("when query is empty");
   expect(source).toContain("block.visibleWhen?.query === queryName");
   expect(source).toContain("isQueryBackedBlock");
+  expect(source).toContain('placeholder="Markdown line break by default"');
   expect(styles).toContain(".studio-field.inline-field");
 });
 
