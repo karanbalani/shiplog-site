@@ -51,6 +51,7 @@ export function createBlock(type: TargetRenderBlock["type"]): TargetRenderBlock 
       columns: [{ label: "Column", value: "{{ column }}" }],
     };
   if (type === "list") return { type, query: "", value: "{{ value }}" };
+  if (type === "repeat") return { type, query: "", template: "{{ value }}" };
   if (type === "rawMarkdown") return { type, content: "<!-- raw markdown -->" };
   return { type: "divider" };
 }

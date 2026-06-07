@@ -403,6 +403,21 @@
   resize: vertical;
 }
 
+.studio-field.inline-field {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.studio-field.inline-field input[type="checkbox"] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
 .studio-field.studio-json-field textarea {
   height: 100%;
   min-height: 0;

@@ -84,6 +84,7 @@ const blockTypes: TargetRenderBlock["type"][] = [
   "paragraph",
   "table",
   "list",
+  "repeat",
   "rawMarkdown",
   "divider",
 ];
@@ -131,14 +132,15 @@ function blockLabel(block: TargetRenderBlock, index: number): string {
   if (block.type === "paragraph") return "Paragraph";
   if (block.type === "table") return `Table ${block.query ? `(${block.query})` : ""}`.trim();
   if (block.type === "list") return `List ${block.query ? `(${block.query})` : ""}`.trim();
+  if (block.type === "repeat") return `Repeat ${block.query ? `(${block.query})` : ""}`.trim();
   if (block.type === "rawMarkdown") return "Raw Markdown";
   return `Divider ${index + 1}`;
 }
 
-function isListLikeBlock(
+function isQueryBackedBlock(
   block: TargetRenderBlock,
 ): block is Extract<TargetRenderBlock, { query: string }> {
-  return block.type === "table" || block.type === "list";
+  return block.type === "table" || block.type === "list" || block.type === "repeat";
 }
 
 function blockPreviewState(
@@ -147,7 +149,7 @@ function blockPreviewState(
 ): BlockPreviewState {
   const previewContext = context ?? { profile: { displayName: previewDisplayName } };
 
-  if (isListLikeBlock(block) && !Array.isArray(previewContext[block.query])) {
+  if (isQueryBackedBlock(block) && !Array.isArray(previewContext[block.query])) {
     return {
       markdown: "",
       message: "Connect and render preview to see this data block.",
@@ -199,6 +201,13 @@ export default function RendorStudio() {
 
   const renderedJson = useMemo(() => formatRenderConfig(config), [config]);
   const queryNames = useMemo(() => queryEntries(config).map(([name]) => name), [config]);
+  const manyQueryNames = useMemo(
+    () =>
+      queryEntries(config)
+        .filter(([, query]) => query.mode === "many")
+        .map(([name]) => name),
+    [config],
+  );
 
   useEffect(() => {
     function syncDeviceState() {
@@ -396,7 +405,13 @@ export default function RendorStudio() {
     queryName: string,
   ) {
     if (!queryName) return queries;
-    if (markdown.some((block) => isListLikeBlock(block) && block.query === queryName)) {
+    if (
+      markdown.some(
+        (block) =>
+          (isQueryBackedBlock(block) && block.query === queryName) ||
+          block.visibleWhen?.query === queryName,
+      )
+    ) {
       return queries;
     }
 
@@ -405,9 +420,12 @@ export default function RendorStudio() {
     return nextQueries;
   }
 
-  function createDataBlock(type: "table" | "list", existingNames = queryNames): TargetRenderBlock {
+  function createDataBlock(
+    type: "table" | "list" | "repeat",
+    existingNames = queryNames,
+  ): TargetRenderBlock {
     const block = createBlock(type);
-    if (!isListLikeBlock(block)) return block;
+    if (!isQueryBackedBlock(block)) return block;
     return { ...block, query: createQueryName(existingNames) };
   }
 
@@ -422,15 +440,17 @@ export default function RendorStudio() {
     const currentBlock = config.markdown[index];
     if (!currentBlock) return;
 
-    const previousQueryName = isListLikeBlock(currentBlock) ? currentBlock.query : "";
+    const previousQueryName = isQueryBackedBlock(currentBlock) ? currentBlock.query : "";
     const nextBlock =
-      type === "table" || type === "list" ? createDataBlock(type) : createBlock(type);
+      type === "table" || type === "list" || type === "repeat"
+        ? createDataBlock(type)
+        : createBlock(type);
     const nextMarkdown = config.markdown.map((block, blockIndex) =>
       blockIndex === index ? nextBlock : block,
     );
     let nextQueries = { ...config.queries };
 
-    if (isListLikeBlock(nextBlock)) {
+    if (isQueryBackedBlock(nextBlock)) {
       nextQueries[nextBlock.query] = createQueryConfig();
     }
 
@@ -443,7 +463,7 @@ export default function RendorStudio() {
 
   function updateBlockQuery(index: number, patch: Partial<TargetRenderQueryConfig>) {
     const block = config.markdown[index];
-    if (!block || !isListLikeBlock(block)) return;
+    if (!block || !isQueryBackedBlock(block)) return;
 
     const queries = { ...config.queries };
     let queryName = block.query;
@@ -470,7 +490,7 @@ export default function RendorStudio() {
     const markdown = config.markdown.filter((_, itemIndex) => itemIndex !== index);
     const safeMarkdown = markdown.length ? markdown : [createBlock("paragraph")];
     const queries =
-      removedBlock && isListLikeBlock(removedBlock)
+      removedBlock && isQueryBackedBlock(removedBlock)
         ? removeQueryIfUnused({ ...config.queries }, safeMarkdown, removedBlock.query)
         : config.queries;
     updateConfig({ ...config, queries, markdown: safeMarkdown });
@@ -520,7 +540,7 @@ export default function RendorStudio() {
 
   async function testBlockQuery(index: number) {
     const block = config.markdown[index];
-    if (!block || !isListLikeBlock(block)) return;
+    if (!block || !isQueryBackedBlock(block)) return;
 
     const query = config.queries?.[block.query];
     const sql = sqlRef.current;
@@ -876,8 +896,11 @@ export default function RendorStudio() {
                               dragged={draggedBlockIndex === index}
                               index={index}
                               query={
-                                isListLikeBlock(block) ? config.queries?.[block.query] : undefined
+                                isQueryBackedBlock(block)
+                                  ? config.queries?.[block.query]
+                                  : undefined
                               }
+                              visibilityQueryNames={manyQueryNames}
                               queryTestMessage={queryTestMessages[index]}
                               onChangeType={(type) => updateBlockType(index, type)}
                               onChange={(nextBlock) => updateBlock(index, nextBlock)}
@@ -1013,6 +1036,7 @@ function BlockEditor({
   index,
   query,
   queryTestMessage,
+  visibilityQueryNames,
   onChange,
   onChangeType,
   onDragEnd,
@@ -1026,6 +1050,7 @@ function BlockEditor({
   index: number;
   query?: TargetRenderQueryConfig;
   queryTestMessage?: QueryTestMessage;
+  visibilityQueryNames: string[];
   onChange: (block: TargetRenderBlock) => void;
   onChangeType: (type: TargetRenderBlock["type"]) => void;
   onDragEnd: () => void;
@@ -1150,6 +1175,40 @@ function BlockEditor({
           </>
         )}
 
+        {block.type === "repeat" && (
+          <>
+            <BlockQueryEditor
+              query={query}
+              queryTestMessage={queryTestMessage}
+              onQueryChange={onQueryChange}
+              onTestQuery={onTestQuery}
+            />
+            <label className="studio-field">
+              <span>Template</span>
+              <textarea
+                {...configBuilderNoAutofillProps}
+                value={block.template}
+                rows={3}
+                onChange={(event) => onChange({ ...block, template: event.target.value })}
+              />
+            </label>
+            <label className="studio-field">
+              <span>Separator</span>
+              <input
+                {...configBuilderNoAutofillProps}
+                value={block.separator ?? ""}
+                placeholder="newline by default"
+                onChange={(event) =>
+                  onChange({
+                    ...block,
+                    separator: event.target.value ? event.target.value : undefined,
+                  })
+                }
+              />
+            </label>
+          </>
+        )}
+
         {block.type === "table" && (
           <>
             <BlockQueryEditor
@@ -1227,8 +1286,94 @@ function BlockEditor({
             </div>
           </>
         )}
+        <BlockVisibilityEditor
+          block={block}
+          queryNames={visibilityQueryNames}
+          onChange={onChange}
+        />
       </div>
     </article>
+  );
+}
+
+function BlockVisibilityEditor({
+  block,
+  queryNames,
+  onChange,
+}: {
+  block: TargetRenderBlock;
+  queryNames: string[];
+  onChange: (block: TargetRenderBlock) => void;
+}) {
+  const enabled = Boolean(block.visibleWhen);
+  const selectedQuery = block.visibleWhen?.query ?? queryNames[0] ?? "";
+  const selectOptions = selectedQuery
+    ? Array.from(new Set([selectedQuery, ...queryNames]))
+    : queryNames;
+
+  return (
+    <section className="block-query-panel">
+      <label className="studio-field inline-field">
+        <span>Conditional visibility</span>
+        <input
+          type="checkbox"
+          aria-label="Enable conditional visibility"
+          checked={enabled}
+          disabled={!enabled && queryNames.length === 0}
+          onChange={(event) =>
+            onChange({
+              ...block,
+              visibleWhen: event.target.checked
+                ? { query: selectedQuery, hasRows: true }
+                : undefined,
+            })
+          }
+        />
+      </label>
+      {enabled && (
+        <div className="query-grid two-columns">
+          <label className="studio-field">
+            <span>Query</span>
+            <select
+              value={selectedQuery}
+              onChange={(event) =>
+                onChange({
+                  ...block,
+                  visibleWhen: {
+                    query: event.target.value,
+                    hasRows: block.visibleWhen?.hasRows ?? true,
+                  },
+                })
+              }
+            >
+              {selectOptions.map((queryName) => (
+                <option value={queryName} key={queryName}>
+                  {queryName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="studio-field">
+            <span>Show block</span>
+            <select
+              value={block.visibleWhen?.hasRows ? "hasRows" : "empty"}
+              onChange={(event) =>
+                onChange({
+                  ...block,
+                  visibleWhen: {
+                    query: selectedQuery,
+                    hasRows: event.target.value === "hasRows",
+                  },
+                })
+              }
+            >
+              <option value="hasRows">when query has rows</option>
+              <option value="empty">when query is empty</option>
+            </select>
+          </label>
+        </div>
+      )}
+    </section>
   );
 }
 

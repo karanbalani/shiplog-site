@@ -83,6 +83,18 @@ test("keeps markdown blocks scannable with local previews", () => {
   expect(styles).not.toContain(".block-card-grid");
 });
 
+test("supports repeat blocks and block visibility in guided mode", () => {
+  expect(source).toContain('"repeat"');
+  expect(source).toContain('block.type === "repeat"');
+  expect(source).toContain("BlockVisibilityEditor");
+  expect(source).toContain("Conditional visibility");
+  expect(source).toContain("when query has rows");
+  expect(source).toContain("when query is empty");
+  expect(source).toContain("block.visibleWhen?.query === queryName");
+  expect(source).toContain("isQueryBackedBlock");
+  expect(styles).toContain(".studio-field.inline-field");
+});
+
 test("keeps Rendor Studio as an internal-scroll tool surface", () => {
   expect(styles).toContain(".studio-root");
   expect(styles).toContain("height: 100svh");
