@@ -10,22 +10,6 @@ import type {
 export type StudioMode = "guided" | "json";
 export type ConnectionStatus = "idle" | "testing" | "connected" | "error" | "stale";
 
-export type SchemaColumn = {
-  schema: string;
-  table: string;
-  type: "table" | "view";
-  name: string;
-  dataType: string;
-  nullable: boolean;
-};
-
-export type SchemaTable = {
-  schema: string;
-  name: string;
-  type: "table" | "view";
-  columns: SchemaColumn[];
-};
-
 export function createInitialRenderConfig(savedConfig?: TargetRenderConfig | null) {
   return cloneRenderConfig(savedConfig ?? (defaultRenderConfig as TargetRenderConfig));
 }
@@ -73,26 +57,4 @@ export function createBlock(type: TargetRenderBlock["type"]): TargetRenderBlock 
 
 export function createTableColumn(): TargetRenderTableColumn {
   return { label: "Column", value: "{{ value }}" };
-}
-
-export function normalizeSchemaTables(columns: SchemaColumn[]): SchemaTable[] {
-  const tables = new Map<string, SchemaTable>();
-
-  for (const column of columns) {
-    const key = `${column.schema}.${column.table}`;
-    const table =
-      tables.get(key) ??
-      ({
-        schema: column.schema,
-        name: column.table,
-        type: column.type,
-        columns: [],
-      } satisfies SchemaTable);
-    table.columns.push(column);
-    tables.set(key, table);
-  }
-
-  return [...tables.values()].sort((a, b) =>
-    `${a.schema}.${a.name}`.localeCompare(`${b.schema}.${b.name}`),
-  );
 }

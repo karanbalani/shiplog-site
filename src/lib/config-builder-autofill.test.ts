@@ -5,12 +5,16 @@ import { configBuilderNoAutofillProps } from "./config-builder-autofill";
 test("marks config builder inputs as non-autofill fields", () => {
   expect(configBuilderNoAutofillProps).toEqual({
     autoCapitalize: "none",
-    autoComplete: "off",
+    autoComplete: "new-password",
     autoCorrect: "off",
+    "data-1password-ignore": "true",
     "data-1p-ignore": "true",
     "data-bwignore": "true",
+    "data-dashlane-ignore": "true",
     "data-form-type": "other",
+    "data-keeper-ignore": "true",
     "data-lpignore": "true",
+    "data-protonpass-ignore": "true",
     spellCheck: false,
   });
 });

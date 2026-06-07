@@ -108,8 +108,8 @@ test("hydrates device gates from the same server-compatible shell", () => {
   );
   const css = readFileSync(new URL("../styles/device-gate.css", import.meta.url), "utf8");
 
-  expect(configBuilder).toContain("useState<ConfigBuilderDeviceBlockReason | null>(null)");
-  expect(rendorStudio).toContain("useState<ConfigBuilderDeviceBlockReason | null>(null)");
+  expect(configBuilder).toMatch(/useState<ConfigBuilderDeviceBlockReason \| null>\(\s*null,?\s*\)/);
+  expect(rendorStudio).toMatch(/useState<ConfigBuilderDeviceBlockReason \| null>\(\s*null,?\s*\)/);
   expect(configBuilder).not.toMatch(
     /useState<ConfigBuilderDeviceBlockReason \| null>\(\(\) =>[\s\S]*?readConfigBuilderDevice\(\)/,
   );
